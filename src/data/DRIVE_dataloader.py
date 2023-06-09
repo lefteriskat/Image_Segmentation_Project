@@ -48,12 +48,19 @@ class DRIVEDataset(torch.utils.data.Dataset):
         
         return X, Y
 
-# The same transform can be used for both train and test, assuming you want to resize and convert to tensor
-transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
 
-# Create Dataset and DataLoader
-dataset = DRIVEDataset(root_dir='/dtu/datasets1/02514/DRIVE/training', transform=transform)
-data_loader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=0)
 
-a=next(iter(data_loader))
-print(a)
+def main():
+    # The same transform can be used for both train and test, assuming you want to resize and convert to tensor
+    transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
+
+    # Create Dataset and DataLoader
+    dataset = DRIVEDataset(root_dir='/dtu/datasets1/02514/DRIVE/training', transform=transform)
+    data_loader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=0)
+
+    a=next(iter(data_loader))
+    print(a)
+
+
+if __name__=='__main__':
+    main()
