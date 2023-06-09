@@ -3,51 +3,22 @@ import torch
 from torchmetrics import Dice
 from torchmetrics.classification import BinarySpecificity, BinaryJaccardIndex, BinaryRecall
 
-# Generate ground truth segmentation mask (binary tensor)
-ground_truth = torch.tensor([[0, 0, 1, 1],
-                             [0, 1, 1, 1],
-                             [0, 0, 1, 1]], dtype=torch.bool)
+def compute_iou(predicted_mask, ground_truth):
+    iou = BinaryJaccardIndex(num_classes=2)
+    iou_value = iou(predicted_mask, ground_truth)
+    return iou_value
 
-# Generate predicted segmentation mask (binary tensor)
-predicted_mask = torch.tensor([[0, 0, 1, 1],
-                               [0, 1, 1, 0],
-                               [0, 0, 0, 0]], dtype=torch.bool)
+def compute_dice(predicted_mask, ground_truth):
+    dice = Dice()
+    dice_value = dice(predicted_mask, ground_truth)
+    return dice_value
 
+def compute_specificity(predicted_mask, ground_truth):
+    metric = BinarySpecificity()
+    specificity = metric(predicted_mask, ground_truth)
+    return specificity
 
-### IoU
-
-# Compute evaluation metrics
-iou = BinaryJaccardIndex(num_classes=2)
-IoU= iou(predicted_mask, ground_truth)
-
-print("IoU:", IoU)
-
-
-
-### DICE
-
-met = Dice() # average='micro'
-dice = met(predicted_mask, ground_truth)
-
-# Print the Dice Overlap metric
-print("Dice:", dice)
-
-
-
-### Specificity
-# 1os tropos
-metric = BinarySpecificity()
-specificity = metric(predicted_mask, ground_truth)
-
-# Print the specificity metric
-print("Specificity:", specificity)
-
-
-
-### Sensitivity
-metric = BinaryRecall()
-sensitivity1 = metric(predicted_mask, ground_truth)
-
-# Print the sensitivity metric
-print("Sensitivity:", sensitivity1)
-
+def compute_sensitivity(predicted_mask, ground_truth):
+    metric = BinaryRecall()
+    sensitivity = metric(predicted_mask, ground_truth)
+    return sensitivity
