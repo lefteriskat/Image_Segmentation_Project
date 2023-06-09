@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torchmetrics import Dice
 from torchmetrics.classification import BinarySpecificity, BinaryJaccardIndex, BinaryRecall
-
+import torchmetrics
 def compute_iou(predicted_mask, ground_truth):
     iou = BinaryJaccardIndex(num_classes=2)
     iou_value = iou(predicted_mask, ground_truth)
@@ -19,6 +19,5 @@ def compute_specificity(predicted_mask, ground_truth):
     return specificity
 
 def compute_sensitivity(predicted_mask, ground_truth):
-    metric = BinaryRecall()
-    sensitivity = metric(predicted_mask, ground_truth)
+    sensitivity = torchmetrics.functional.classification.binary_recall(predicted_mask, ground_truth)
     return sensitivity
