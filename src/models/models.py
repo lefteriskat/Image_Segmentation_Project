@@ -50,3 +50,119 @@ class EncDecModel(nn.Module):
         d2 = F.relu(self.dec_conv2(self.upsample2(d1)))
         d3 = self.dec_conv3(self.upsample3(d2))  # no activation
         return d3
+    
+class UNet(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        # encoder (downsampling)
+        self.enc_conv0 = nn.Sequential(
+            nn.Conv2d(3, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(),
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU()
+        )
+        self.pool0 = nn.MaxPool2d(2, stride=2)
+
+        self.enc_conv1 = nn.Sequential(
+            nn.Conv2d(64, 128, 3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(),
+            nn.Conv2d(128, 128, 3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU()
+        )
+        self.pool1 = nn.MaxPool2d(2, stride=2)
+
+        self.enc_conv2 = nn.Sequential(
+            nn.Conv2d(128, 256, 3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(),
+            nn.Conv2d(256, 256, 3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU()
+        )
+        self.pool2 = nn.MaxPool2d(2, stride=2)
+
+        self.enc_conv3 = nn.Sequential(
+            nn.Conv2d(256, 512, 3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.LeakyReLU(),
+            nn.Conv2d(512, 512, 3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.LeakyReLU()
+        )
+        self.pool3 = nn.MaxPool2d(2, stride=2)
+
+        # bottleneck
+        self.bottleneck_conv = nn.Sequential(
+            nn.Conv2d(512, 1024, 3, padding=1),
+            nn.BatchNorm2d(1024),
+            nn.LeakyReLU(),
+            nn.Conv2d(1024, 1024, 3, padding=1),
+            nn.BatchNorm2d(1024),
+            nn.LeakyReLU()
+        )
+
+        # decoder (upsampling)
+        self.upconv3 = nn.ConvTranspose2d(1024, 512, 2, stride=2)
+        self.dec_conv3 = nn.Sequential(
+            nn.Conv2d(1024, 512, 3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.LeakyReLU(),
+            nn.Conv2d(512, 512, 3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.LeakyReLU()
+        )
+
+        self.upconv2 = nn.ConvTranspose2d(512, 256, 2, stride=2)
+        self.dec_conv2 = nn.Sequential(
+            nn.Conv2d(512, 256, 3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(),
+            nn.Conv2d(256, 256, 3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU()
+        )
+
+        self.upconv1 = nn.ConvTranspose2d(256, 128, 2, stride=2)
+        self.dec_conv1 = nn.Sequential(
+            nn.Conv2d(256, 128, 3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(),
+            nn.Conv2d(128, 128, 3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU()
+        )
+
+        self.upconv0 = nn.ConvTranspose2d(128, 64, 2, stride=2)
+        self.dec_conv0 = nn.Sequential(
+            nn.Conv2d(128, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(),
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU()
+        )
+
+        self.final_conv = nn.Conv2d(64, 1, 1)
+
+    def forward(self, x):
+        # encoder
+        e0 = self.enc_conv0(x)
+        e1 = self.enc_conv1(self.pool0(e0))
+        e2 = self.enc_conv2(self.pool1(e1))
+        e3 = self.enc_conv3(self.pool2(e2))
+
+        # bottleneck
+        b = self.bottleneck_conv(self.pool3(e3))
+
+        # decoder
+        d3 = self.dec_conv3(torch.cat([self.upconv3(b), e3], 1))
+        d2 = self.dec_conv2(torch.cat([self.upconv2(d3), e2], 1))
+        d1 = self.dec_conv1(torch.cat([self.upconv1(d2), e1], 1))
+        d0 = self.dec_conv0(torch.cat([self.upconv0(d1), e0], 1))
+
+        return torch.sigmoid(self.final_conv(d0))
