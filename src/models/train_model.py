@@ -23,10 +23,7 @@ def main():
     # Paths and constants
     ph2_data_path = '/dtu/datasets1/02514/PH2_Dataset_images'
     
-
-    return
-
-    resize_dims = 256
+    resize_dims = 128
     batch_size = 4 # we do not have many images
     epochs = 40
     n_epochs_save = 10 # save every n_epochs_save epochs
