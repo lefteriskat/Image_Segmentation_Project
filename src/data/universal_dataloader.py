@@ -1,5 +1,5 @@
-from DRIVE_dataloader import DRIVEDataset
-from ph_dataset import PH2Dataset
+from src.data.DRIVE_dataloader import DRIVEDataset
+from src.data.ph_dataset import PH2Dataset
 import torch
 from torch.utils.data import DataLoader
 import torchvision.transforms as transforms

@@ -13,6 +13,8 @@ from tqdm import tqdm
 from src.data.ph_dataset import PH2Dataset
 from src.models.models import EncDecModel
 
+from src.data import universal_dataloader
+
 def bce_loss(y_real, y_pred):
     y_pred = torch.clip(y_pred, -10, 10)
     return torch.mean(y_pred - y_real*y_pred + torch.log(1 + torch.exp(-y_pred)))
@@ -20,10 +22,19 @@ def bce_loss(y_real, y_pred):
 def main():
     # Paths and constants
     ph2_data_path = '/dtu/datasets1/02514/PH2_Dataset_images'
+    
 
-    resize_dims = 128
+    return
+
+    resize_dims = 256
     batch_size = 4 # we do not have many images
     epochs = 40
+    n_epochs_save = 10 # save every n_epochs_save epochs
+
+    # Names and other identifiers
+    model_name='baseline'
+
+
 
     # Device setting
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -83,6 +94,9 @@ def main():
             train_avg_loss += loss / len(train_loader)
 
         print(' - Training loss: %f' % train_avg_loss)
+
+        if epoch%n_epochs_save==0:
+            torch.save()
 
         #Compute the evaluation set loss
         eval_avg_loss = 0
