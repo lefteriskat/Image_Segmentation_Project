@@ -22,11 +22,8 @@ def bce_loss(y_real, y_pred):
 def main():
     # Paths and constants
     ph2_data_path = '/dtu/datasets1/02514/PH2_Dataset_images'
-    
 
-    return
-
-    resize_dims = 256
+    resize_dims = 128
     batch_size = 4 # we do not have many images
     epochs = 40
     n_epochs_save = 10 # save every n_epochs_save epochs
@@ -46,18 +43,9 @@ def main():
                                           transforms.ToTensor()])
     
     test_transform = train_transform
-
-    train_dataset = PH2Dataset(root_dir=ph2_data_path, transform=train_transform)
-    train_loader = DataLoader(train_dataset,
-                              batch_size=batch_size,
-                              shuffle=True
-                              )
+    val_transform = train_transform
     
-    eval_dataset = PH2Dataset(root_dir=ph2_data_path, transform=test_transform)
-    eval_loader = DataLoader(eval_dataset,
-                              batch_size=batch_size,
-                              shuffle=False
-                              )
+    train_loader, eval_loader, test_loader = universal_dataloader.getDataLoader("ph", train_transform, val_transform, test_transform)
     
 
     # Model instanciating
@@ -65,7 +53,7 @@ def main():
     model.to(device)
 
     # Optimizer
-    lr = 1e-3
+    lr = 1e-4
     optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 
     # Loss function
@@ -95,8 +83,8 @@ def main():
 
         print(' - Training loss: %f' % train_avg_loss)
 
-        if epoch%n_epochs_save==0:
-            torch.save()
+        # if epoch%n_epochs_save==0:
+        #     torch.save()
 
         #Compute the evaluation set loss
         eval_avg_loss = 0
