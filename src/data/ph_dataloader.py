@@ -20,7 +20,6 @@ import matplotlib.pyplot as plt
 from IPython.display import clear_output
 
 
-#print('hello')
 
 class PH2Dataset(torch.utils.data.Dataset):
     def __init__(self, root_dir, transform):
@@ -52,17 +51,21 @@ class PH2Dataset(torch.utils.data.Dataset):
         
         return X, Y
 
-# The same transform can be used for both train and test, assuming you want to resize and convert to tensor
-transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
-
-# Create Datasets and DataLoaders
-trainset = PH2Dataset(root_dir='/dtu/datasets1/02514/PH2_Dataset_images', transform=transform)
-train_loader = DataLoader(trainset, batch_size=32, shuffle=True, num_workers=0)
-print("MIA XARAAAA")
-a=next(iter(train_loader))
-print(a)
 
 
+def main():
+    # The same transform can be used for both train and test, assuming you want to resize and convert to tensor
+    transform = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
+
+    # Create Datasets and DataLoaders
+    trainset = PH2Dataset(root_dir='/dtu/datasets1/02514/PH2_Dataset_images', transform=transform)
+    train_loader = DataLoader(trainset, batch_size=32, shuffle=True, num_workers=0)
+    print("MIA XARAAAA")
+    a=next(iter(train_loader))
+    print(a[0].shape, a[1].shape)
+
+if __name__=='__main__':
+    main()
 
 #testset = PH2Dataset(root_dir='./PH2_Dataset_image/test', transform=transform)
 #test_loader = DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=0)
