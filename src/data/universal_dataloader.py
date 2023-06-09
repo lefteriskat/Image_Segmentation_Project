@@ -19,7 +19,7 @@ def getDataLoader(dataset:str, train_transforms, val_transforms, test_transforms
         target_val_dataset = PH2Dataset(root_dir='/dtu/datasets1/02514/PH2_Dataset_images', transform=val_transforms)
         target_test_dataset = PH2Dataset(root_dir='/dtu/datasets1/02514/PH2_Dataset_images', transform=test_transforms)
 
-    print("f Total length: {len(target_train_dataset)}") 
+    print(f"Total length: {len(target_train_dataset)}") 
 
     indices = torch.randperm(len(target_train_dataset))
     val_size = int(np.floor(len(target_train_dataset)*val_fraction))
