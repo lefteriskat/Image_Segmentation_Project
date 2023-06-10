@@ -174,12 +174,48 @@ class UnetBlock(nn.Module):
     UNet block
     It can be used to sequrntially build a larger UNet from the bottom up.
     '''
-    def __init__(self):
+    def __init__(self, in_channels, mid_channels, out_channels=None, layers=1, sub_network=None, filter_size=3):
         super().__init__()
+
+        in_layers = [self.cnnLayer(in_channels, mid_channels, filter_size)]
+        
+        # Set the multiplier for the concatenation cnn's
+        if sub_network is None:
+            inputs_to_outputs = 1
+        else:
+            inputs_to_outputs = 2
+
+        out_layers = [self.cnnLayer(mid_channels*inputs_to_outputs, mid_channels, filter_size)]
+
+        for _ in range(layers-1):
+            in_layers.append(self.cnnLayer(mid_channels, mid_channels, filter_size))
+            out_layers.append(self.cnnLayer(mid_channels, mid_channels, filter_size))
+
+        if out_channels is not None:
+            out_layers.append(nn.Conv2d(mid_channels, out_channels, 1, padding=0))
+
+        self.in_model = nn.Sequential(*in_layers)
+
+        if sub_network is not None:
+            self.bottleneck = nn.Sequential(
+                nn.MaxPool2d(2),
+                sub_network,
+                nn.ConvTranspose2d(mid_channels, mid_channels,filter_size, padding=filter_size//2,output_padding=1, stride=2)                
+            )
+        else:
+            self.bottleneck = None
+        
+        self.out_model = nn.Sequential(*out_layers)
 
 
     def forward(self, x):
-        return x
+        full_scale_result = self.in_model(x)
+
+        if self.bottleneck is not None:
+            bottle_result = self.bottleneck(full_scale_result)
+            full_scale_result = torch.cat([full_scale_result, bottle_result], dim=1)
+        
+        return self.out_model(full_scale_result)
     
     def cnn_layer(self, in_channels, out_channels, kernel_size=3, bn=True):
         padding = kernel_size//2 # To preserve img dimensions. Equal to int((k-1)/2)
@@ -190,3 +226,23 @@ class UnetBlock(nn.Module):
             nn.LeakyReLU()
         )
     
+
+class UNetBlocked(nn.Module):
+    '''
+    Creates a UNet from UnetBlock blocks
+    '''
+    def __init__(self):
+        super().__init__()
+        
+        # Create UNet from UNetBlock 's based on the constructor arguments
+        unet_model = nn.Sequential(
+            UnetBlock(3, 32, layers=2, sub_network=
+                UnetBlock(32, 64, out_channels=32, layers=2, sub_network=
+                    UnetBlock(64, 128, out_channels=64, layers=2)
+                ),
+            ),
+            nn.Conv2d(32, 1, 3, padding=1)
+        )
+
+    def forward(self, x):
+        return self.UNet(x)
