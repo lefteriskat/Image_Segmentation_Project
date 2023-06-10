@@ -48,6 +48,11 @@ def main():
 
     #print(len(train))
 
+    a, b = next(iter(train))
+
+    print(a.shape, b.shape)
+    print(a.dtype, b.dtype)
+
 
 if __name__=='__main__':
     main()

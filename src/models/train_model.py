@@ -11,9 +11,11 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from src.data.ph_dataset import PH2Dataset
-from src.models.models import EncDecModel
+from src.models.models import EncDecModel, UNet
 
 from src.data import universal_dataloader
+
+import src.data.utils as metrics 
 
 def bce_loss(y_real, y_pred):
     y_pred = torch.clip(y_pred, -10, 10)
@@ -49,7 +51,8 @@ def main():
     
 
     # Model instanciating
-    model = EncDecModel(3, 1, 64)
+    # model = EncDecModel(3, 1, 64)
+    model = UNet()
     model.to(device)
 
     # Optimizer
@@ -64,7 +67,7 @@ def main():
 
         train_avg_loss = 0
         model.train()  # train mode
-        
+        train_dice_score = 0
         for images_batch, masks_batch in tqdm(train_loader, leave=None, desc='Training'):
             images_batch = images_batch.to(device)
             masks_batch = masks_batch.to(device)
@@ -80,8 +83,15 @@ def main():
 
             # calculate metrics to show the user
             train_avg_loss += loss / len(train_loader)
+            Y_hat = F.sigmoid(pred).detach().cpu()
+            print(metrics.compute_dice(Y_hat.cpu().type(torch.int64), masks_batch.cpu().type(torch.int64)))
 
+        
         print(' - Training loss: %f' % train_avg_loss)
+        
+        fig = plt.figure()
+        
+    
 
         # if epoch%n_epochs_save==0:
         #     torch.save()
