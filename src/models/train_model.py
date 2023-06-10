@@ -3,7 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-import torchvision.transforms as transforms
+# import torchvision.transforms as transforms
+import albumentations as A
+import albumentations.augmentations as augm
+from albumentations.pytorch import ToTensorV2
+
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,8 +21,31 @@ from src.data import universal_dataloader
 
 import src.data.utils as metrics 
 
+
+
+def plot_results(images_batch, masks_batch, pred, title='results'):
+    
+    pred = pred.detach().cpu()
+    pred = F.sigmoid(pred)
+
+    pred = pred.numpy()
+
+    images = images_batch.detach().cpu().numpy()
+    masks_real = masks_batch.detach().cpu().numpy()
+
+    fig, ax = plt.subplots(3,4)
+
+    for i in range(4):
+        ax[0,i].imshow(images[0])
+
+
+
+
+
+
 def bce_loss(y_real, y_pred):
-    y_pred = torch.clip(y_pred, -10, 10)
+
+    y_pred = torch.clip(y_pred, -100, 100)
     return torch.mean(y_pred - y_real*y_pred + torch.log(1 + torch.exp(-y_pred)))
 
 def main():
@@ -27,9 +54,10 @@ def main():
 
     resize_dims = 128
     batch_size = 4 # we do not have many images
-    epochs = 60
+    epochs = 120
     n_epochs_save = 10 # save every n_epochs_save epochs
-    lr = 5*1e-4
+    lr = 1e-4
+
     # Names and other identifiers
     model_name='baseline'
 
@@ -41,8 +69,21 @@ def main():
 
     # Datasets and data loaders
     
-    train_transform = transforms.Compose([transforms.Resize((resize_dims, resize_dims)),
-                                          transforms.ToTensor()])
+    # train_transform = transforms.Compose([transforms.Resize((resize_dims, resize_dims)),
+    #                                       transforms.ToTensor()])
+    
+    # Define the training augmentations for the training data
+    p = 0.1
+    train_transform = A.Compose([
+        A.RandomCrop(width=resize_dims, height=resize_dims),
+        A.HorizontalFlip(p),
+        A.VerticalFlip(p),
+        A.RandomRotate90(p),
+        A.Normalize(),
+        ToTensorV2(),
+        ])
+
+
     
     test_transform = train_transform
     val_transform = train_transform
@@ -51,12 +92,13 @@ def main():
     
 
     # Model instanciating
-    # model = EncDecModel(3, 1, 64)
+    model = EncDecModel(3, 1, 64)
     model = UNetBlocked(in_channels=3, out_channels=1)
-    model.to(device)
+    # model.to(device)
 
     # Optimizer
     optimizer = torch.optim.Adam(model.parameters(),lr=lr)
+    # optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9)
 
     # Loss function
     loss_func = bce_loss
@@ -68,6 +110,10 @@ def main():
         model.train()  # train mode
         train_dice_score = 0
         for images_batch, masks_batch in tqdm(train_loader, leave=None, desc='Training'):
+
+            
+            masks_batch = torch.unsqueeze(masks_batch, 1)
+
             images_batch = images_batch.to(device)
             masks_batch = masks_batch.to(device)
 
@@ -76,6 +122,10 @@ def main():
 
             # forward
             pred = model(images_batch)
+
+            # pred = F.sigmoid(pred)
+            # pred = torch.where(pred>0.5, 1, 0)
+
             loss = loss_func(masks_batch, pred)  # forward-pass
             loss.backward()  # backward-pass
             optimizer.step()  # update weights
@@ -106,6 +156,8 @@ def main():
             eval_avg_loss+= loss / len(eval_loader)
         
         print(' - Eval loss: %f' % eval_avg_loss)
+
+        plot_results(images_batch, masks_batch, pred)
 
 
 if __name__=='__main__':
