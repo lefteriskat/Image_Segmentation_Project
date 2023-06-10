@@ -254,15 +254,13 @@ class UNetBlocked(nn.Module):
         super().__init__()
         
         layers_per_building_block = 2
-
-   
         
 
         # Create UNet from UNetBlock 's based on the constructor arguments
         self.unet_model = nn.Sequential(
             UnetBlock(in_channels, 32, layers=layers_per_building_block, sub_network=
                 UnetBlock(32, 64, out_channels=32, layers=layers_per_building_block, sub_network=
-                    UnetBlock(64, 128, out_channels=64, layers=layers_per_building_block)
+                    UnetBlock(64, 128, out_channels=64, layers=layers_per_building_block),
                 ),
             ),
             nn.Conv2d(32, out_channels, 3, padding=1)
@@ -272,4 +270,5 @@ class UNetBlocked(nn.Module):
         pass
 
     def forward(self, x):
-        return self.unet_model(x)
+        x = self.unet_model(x)
+        return x
