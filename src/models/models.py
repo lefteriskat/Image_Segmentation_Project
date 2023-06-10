@@ -166,3 +166,27 @@ class UNet(nn.Module):
         d0 = self.dec_conv0(torch.cat([self.upconv0(d1), e0], 1))
 
         return torch.sigmoid(self.final_conv(d0))
+
+
+
+class UnetBlock(nn.Module):
+    '''
+    UNet block
+    It can be used to sequrntially build a larger UNet from the bottom up.
+    '''
+    def __init__(self):
+        super().__init__()
+
+
+    def forward(self, x):
+        return x
+    
+    def cnn_layer(self, in_channels, out_channels, kernel_size=3, bn=True):
+        padding = kernel_size//2 # To preserve img dimensions. Equal to int((k-1)/2)
+        cnn_bias = False if bn else True # Fewer parameters to save
+        return nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size, padding=padding,bias=cnn_bias),
+            nn.BatchNorm2d(out_channels) if bn else nn.Identity(),
+            nn.LeakyReLU()
+        )
+    
