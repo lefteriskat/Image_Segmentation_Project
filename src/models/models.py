@@ -176,15 +176,13 @@ class UnetBlock(nn.Module):
     '''
     def __init__(self, in_channels, mid_channels, out_channels=None, layers=1, sub_network=None, filter_size=3):
         super().__init__()
-
-        # Define which type the encoder/decoder block come from
-
-        block = self.cnn_layer ## could be self.resnet_block. The arguments should match!!!
-
-        # Encoder layers
-        in_layers = [block(in_channels, mid_channels, filter_size)]
         
-        # Set the multiplier for the concatenation cnn's of the decoder
+        
+        in_layers = [self.cnnLayer(in_channels, mid_channels, filter_size)]
+        
+        in_layersres = [self.resnet_layer(in_channels, mid_channels, filter_size)]
+        
+        # Set the multiplier for the concatenation cnn's
         if sub_network is None:
             inputs_to_outputs = 1
         else:
@@ -196,18 +194,20 @@ class UnetBlock(nn.Module):
         
         # Sequentially build up the encoder and decoder networks
         for _ in range(layers-1):
-            in_layers.append(block(mid_channels, mid_channels, filter_size))
-            out_layers.append(block(mid_channels, mid_channels, filter_size))
+            in_layers.append(self.cnnLayer(mid_channels, mid_channels, filter_size))
+            # for Res-Net
+            in_layersres.append(self.cnnLayer(mid_channels, mid_channels, filter_size))
+            #
+            out_layers.append(self.cnnLayer(mid_channels, mid_channels, filter_size))
 
         # Convolution to preserve size of image
         if out_channels is not None:
             out_layers.append(nn.Conv2d(mid_channels, out_channels, 1, padding=0))
         
 
-        # Unpack the encoder layers in a Sequential module for forward
-        self.in_model = nn.Sequential(*in_layers)
-        
-        # Create a bottleneck layer ( from the subnetworks (if they exist) or a simple conv2d that preserves size and channels
+        #self.in_model = nn.Sequential(*in_layers)
+        self.in_model = nn.Sequential(*in_layersres)
+
         if sub_network is not None:
             self.bottleneck = nn.Sequential(
                 nn.MaxPool2d(2),
@@ -230,7 +230,20 @@ class UnetBlock(nn.Module):
         
         return self.out_model(full_scale_result)
     
-    def cnn_layer(self, in_channels, out_channels, kernel_size=3, bn=True):
+    
+    def resnet_layer(self, in_channels, out_channels, kernel_size=3):
+    padding = kernel_size//2
+    cnn_bias = False
+    return nn.Sequential(
+        nn.Conv2d(in_channels, out_channels, kernel_size, padding=padding, bias=cnn_bias),
+        nn.BatchNorm2d(out_channels),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(out_channels, out_channels, kernel_size, padding=padding, bias=cnn_bias),
+        nn.BatchNorm2d(out_channels),
+        nn.ReLU(inplace=True) 
+    )
+    
+    def cnnLayer(self, in_channels, out_channels, kernel_size=3, bn=True):
         padding = kernel_size//2 # To preserve img dimensions. Equal to int((k-1)/2)
         cnn_bias = False if bn else True # Fewer parameters to save
         return nn.Sequential(
