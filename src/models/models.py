@@ -210,6 +210,7 @@ class UnetBlock(nn.Module):
         # Create a bottleneck layer ( from the subnetworks (if they exist) or a simple conv2d that preserves size and channels
         if sub_network is not None:
             self.bottleneck = nn.Sequential(
+                # nn.Conv2d(mid_channels, mid_channels,filter_size, padding=filter_size//2,output_padding=1, stride=2)
                 nn.MaxPool2d(2),
                 sub_network,
                 nn.ConvTranspose2d(mid_channels, mid_channels,filter_size, padding=filter_size//2,output_padding=1, stride=2)                
@@ -244,20 +245,30 @@ class UNetBlocked(nn.Module):
     '''
     Creates a UNet from UnetBlock blocks
     '''
-    def __init__(self, ):
+    def __init__(self, in_channels, out_channels, channels_per_block = [32, 64, 128]):
+        '''
+        in_channels: input image channels, usually 3 for rgb or 1 for grayscale
+        out_channels: 1 for 1 class segmentation (0,1) or n for n classes
+        '''
         super().__init__()
         
+        layers_per_building_block = 2
+
+   
         
 
         # Create UNet from UNetBlock 's based on the constructor arguments
-        unet_model = nn.Sequential(
-            UnetBlock(3, 32, layers=2, sub_network=
-                UnetBlock(32, 64, out_channels=32, layers=2, sub_network=
-                    UnetBlock(64, 128, out_channels=64, layers=2)
+        self.unet_model = nn.Sequential(
+            UnetBlock(in_channels, 32, layers=layers_per_building_block, sub_network=
+                UnetBlock(32, 64, out_channels=32, layers=layers_per_building_block, sub_network=
+                    UnetBlock(64, 128, out_channels=64, layers=layers_per_building_block)
                 ),
             ),
-            nn.Conv2d(32, 1, 3, padding=1)
+            nn.Conv2d(32, out_channels, 3, padding=1)
         )
 
+    def create_unet(self, in_channels, out_channels, layers_list):
+        pass
+
     def forward(self, x):
-        return self.UNet(x)
+        return self.unet_model(x)
