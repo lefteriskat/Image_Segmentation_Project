@@ -27,9 +27,9 @@ def main():
 
     resize_dims = 128
     batch_size = 4 # we do not have many images
-    epochs = 40
+    epochs = 60
     n_epochs_save = 10 # save every n_epochs_save epochs
-
+    lr = 5*1e-4
     # Names and other identifiers
     model_name='baseline'
 
@@ -56,7 +56,6 @@ def main():
     model.to(device)
 
     # Optimizer
-    lr = 1e-4
     optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 
     # Loss function

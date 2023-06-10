@@ -262,7 +262,9 @@ class UNetBlocked(nn.Module):
         self.unet_model = nn.Sequential(
             UnetBlock(in_channels, 32, layers=layers_per_building_block, sub_network=
                 UnetBlock(32, 64, out_channels=32, layers=layers_per_building_block, sub_network=
-                    UnetBlock(64, 128, out_channels=64, layers=layers_per_building_block)
+                    UnetBlock(64, 128, out_channels=64, layers=layers_per_building_block, sub_network=
+                              UnetBlock(128, 256, out_channels=128, layers=layers_per_building_block),
+                    ),
                 ),
             ),
             nn.Conv2d(32, out_channels, 3, padding=1)
