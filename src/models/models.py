@@ -179,8 +179,9 @@ class UnetBlock(nn.Module):
 
         # Define which type the encoder/decoder block come from
 
-        block = self.cnn_layer ## could be self.resnet_block. The arguments should match!!!
-
+        #block = self.cnn_layer ## could be self.resnet_block. The arguments should match!!!
+        block = self.resnet_layer
+        
         # Encoder layers
         in_layers = [block(in_channels, mid_channels, filter_size)]
         
@@ -240,7 +241,39 @@ class UnetBlock(nn.Module):
             nn.BatchNorm2d(out_channels) if bn else nn.Identity(),
             nn.LeakyReLU()
         )
-    
+
+        
+    def resnet_layer(self, in_channels, out_channels, kernel_size=3, bn=True):
+        padding = kernel_size//2  # To preserve img dimensions. Equal to int((k-1)/2)
+        cnn_bias = False if bn else True  # Fewer parameters to save
+        layers = []
+        layers.append(nn.Conv2d(in_channels, out_channels, kernel_size, padding=padding, bias=cnn_bias))
+        if bn:
+            layers.append(nn.BatchNorm2d(out_channels))
+        layers.append(nn.LeakyReLU())
+        layers.append(nn.Conv2d(out_channels, out_channels, kernel_size, padding=padding, bias=cnn_bias))
+        if bn:
+            layers.append(nn.BatchNorm2d(out_channels))
+
+        block = nn.Sequential(*layers)
+
+        if in_channels == out_channels:
+            identity = nn.Identity()
+        else:
+            identity = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+
+        return ResidualBlock(block, identity)
+
+class ResidualBlock(nn.Module):
+    def __init__(self, block, shortcut):
+        super().__init__()
+        self.block = block
+        self.shortcut = shortcut
+        
+
+    def forward(self, x):
+        return F.leaky_relu(self.block(x) + self.shortcut(x))
+
 
 class UNetBlocked(nn.Module):
     '''
@@ -255,8 +288,6 @@ class UNetBlocked(nn.Module):
         
         layers_per_building_block = 2
 
-   
-        
 
         # Create UNet from UNetBlock 's based on the constructor arguments
         self.unet_model = nn.Sequential(
