@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from src.data.ph_dataset import PH2Dataset
-from src.models.models import EncDecModel, UNet
+from src.models.models import EncDecModel, UNet, UNetBlocked
 
 from src.data import universal_dataloader
 
@@ -52,7 +52,7 @@ def main():
 
     # Model instanciating
     # model = EncDecModel(3, 1, 64)
-    model = UNet()
+    model = UNetBlocked(in_channels=3, out_channels=1)
     model.to(device)
 
     # Optimizer
@@ -84,13 +84,11 @@ def main():
             # calculate metrics to show the user
             train_avg_loss += loss / len(train_loader)
             Y_hat = F.sigmoid(pred).detach().cpu()
-            print(metrics.compute_dice(Y_hat.cpu().type(torch.int64), masks_batch.cpu().type(torch.int64)))
+            # print(metrics.compute_dice(Y_hat.cpu().type(torch.int64), masks_batch.cpu().type(torch.int64)))
 
         
         print(' - Training loss: %f' % train_avg_loss)
-        
-        fig = plt.figure()
-        
+              
     
 
         # if epoch%n_epochs_save==0:
