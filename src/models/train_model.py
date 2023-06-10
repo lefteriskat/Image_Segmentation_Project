@@ -92,8 +92,8 @@ def main():
     
 
     # Model instanciating
-    model = EncDecModel(3, 1, 64)
-    # model = UNetBlocked(in_channels=3, out_channels=1)
+    # model = EncDecModel(3, 1, 64)
+    model = UNetBlocked(in_channels=3, out_channels=1)
     model.to(device)
 
     # Optimizer
@@ -157,7 +157,7 @@ def main():
         
         print(' - Eval loss: %f' % eval_avg_loss)
 
-        plot_results(images_batch, masks_batch, pred)
+        # plot_results(images_batch, masks_batch, pred)
 
 
 if __name__=='__main__':
