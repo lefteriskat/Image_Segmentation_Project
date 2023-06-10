@@ -177,25 +177,37 @@ class UnetBlock(nn.Module):
     def __init__(self, in_channels, mid_channels, out_channels=None, layers=1, sub_network=None, filter_size=3):
         super().__init__()
 
-        in_layers = [self.cnnLayer(in_channels, mid_channels, filter_size)]
+        # Define which type the encoder/decoder block come from
+
+        block = self.cnn_layer ## could be self.resnet_block. The arguments should match!!!
+
+        # Encoder layers
+        in_layers = [block(in_channels, mid_channels, filter_size)]
         
-        # Set the multiplier for the concatenation cnn's
+        # Set the multiplier for the concatenation cnn's of the decoder
         if sub_network is None:
             inputs_to_outputs = 1
         else:
             inputs_to_outputs = 2
 
-        out_layers = [self.cnnLayer(mid_channels*inputs_to_outputs, mid_channels, filter_size)]
 
+        # Decoder layers
+        out_layers = [block(mid_channels*inputs_to_outputs, mid_channels, filter_size)]
+        
+        # Sequentially build up the encoder and decoder networks
         for _ in range(layers-1):
-            in_layers.append(self.cnnLayer(mid_channels, mid_channels, filter_size))
-            out_layers.append(self.cnnLayer(mid_channels, mid_channels, filter_size))
+            in_layers.append(block(mid_channels, mid_channels, filter_size))
+            out_layers.append(block(mid_channels, mid_channels, filter_size))
 
+        # Convolution to preserve size of image
         if out_channels is not None:
             out_layers.append(nn.Conv2d(mid_channels, out_channels, 1, padding=0))
+        
 
+        # Unpack the encoder layers in a Sequential module for forward
         self.in_model = nn.Sequential(*in_layers)
-
+        
+        # Create a bottleneck layer ( from the subnetworks (if they exist) or a simple conv2d that preserves size and channels
         if sub_network is not None:
             self.bottleneck = nn.Sequential(
                 nn.MaxPool2d(2),
@@ -205,6 +217,7 @@ class UnetBlock(nn.Module):
         else:
             self.bottleneck = None
         
+
         self.out_model = nn.Sequential(*out_layers)
 
 
@@ -231,9 +244,11 @@ class UNetBlocked(nn.Module):
     '''
     Creates a UNet from UnetBlock blocks
     '''
-    def __init__(self):
+    def __init__(self, ):
         super().__init__()
         
+        
+
         # Create UNet from UNetBlock 's based on the constructor arguments
         unet_model = nn.Sequential(
             UnetBlock(3, 32, layers=2, sub_network=
