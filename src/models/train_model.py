@@ -93,8 +93,8 @@ def main():
 
     # Model instanciating
     model = EncDecModel(3, 1, 64)
-    model = UNetBlocked(in_channels=3, out_channels=1)
-    # model.to(device)
+    # model = UNetBlocked(in_channels=3, out_channels=1)
+    model.to(device)
 
     # Optimizer
     optimizer = torch.optim.Adam(model.parameters(),lr=lr)
