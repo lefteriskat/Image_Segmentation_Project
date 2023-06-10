@@ -210,9 +210,10 @@ class UnetBlock(nn.Module):
         # Create a bottleneck layer ( from the subnetworks (if they exist) or a simple conv2d that preserves size and channels
         if sub_network is not None:
             self.bottleneck = nn.Sequential(
-                # nn.Conv2d(mid_channels, mid_channels,filter_size, padding=filter_size//2,output_padding=1, stride=2)
-                nn.MaxPool2d(2),
+                # Downscale
+                nn.Conv2d(mid_channels, mid_channels,filter_size, padding=filter_size//2,stride=2),
                 sub_network,
+                # Upscale
                 nn.ConvTranspose2d(mid_channels, mid_channels,filter_size, padding=filter_size//2,output_padding=1, stride=2)                
             )
         else:
