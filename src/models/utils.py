@@ -152,7 +152,7 @@ class Losses:
         den = (y_real_flat + F.sigmoid(y_pred_flat)).mean() + 1
         return 1 - (num / den)
     
-    def bce_total_variation(y_real:Tensor, y_pred:Tensor)->Tensor:
+    def bce_total_variation(y_real:Tensor, y_pred:Tensor, lambda_:float=0.1)->Tensor:
 
         def total_variation_term():        
             y_pred_x = y_pred[:,:,:-1,:]
@@ -171,4 +171,4 @@ class Losses:
             term2 = torch.sum( torch.abs(F.sigmoid(y_pred_yp1_flat) - F.sigmoid(y_pred_y_flat)) )
             return term1 + term2
 
-        return Losses.bce_loss(y_real, y_pred) + 0.1*total_variation_term()
+        return Losses.bce_loss(y_real, y_pred) + lambda_*total_variation_term()
