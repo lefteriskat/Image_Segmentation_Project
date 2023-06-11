@@ -6,7 +6,6 @@ import torchvision.ops as ops
 
 # import torchvision.transforms as transforms
 import albumentations as A
-import albumentations.augmentations as augm
 from albumentations.pytorch import ToTensorV2
 
 import cv2
@@ -15,7 +14,6 @@ import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 
-from src.data.ph_dataset import PH2Dataset
 from src.models.models import EncDecModel, UNet, UNetBlocked
 
 from src.data import universal_dataloader
@@ -59,7 +57,7 @@ def main():
     # Paths and constants
     ph2_data_path = "/dtu/datasets1/02514/PH2_Dataset_images"
 
-    dataset_name = 'ph' # 'drive' or 'ph'
+    dataset_name = 'drive' # 'drive' or 'ph'
 
     seed = 7
 
@@ -133,7 +131,7 @@ def main():
 
 
     #### CHANGE THIS!! FOR BASELINE ONLY!!!!
-    train_transform = val_transform
+    # train_transform = val_transform
 
     # train_loader, validation_loader, test_loader = universal_dataloader.getDataLoader(
     #     "ph", train_transform, val_transform, test_transform, batch_size=batch_size
@@ -165,7 +163,8 @@ def main():
     )
 
     # Loss function
-    loss_func = bce_loss
+    loss_func = utils.Losses.bce_loss
+    # loss_func = bce_loss
     # loss_func = dice_loss
     # loss_func = nn.BCEWithLogitsLoss()
 
