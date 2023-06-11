@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+import torchvision.ops as ops
 
 # import torchvision.transforms as transforms
 import albumentations as A
@@ -37,6 +38,22 @@ def dice_loss(y_real, y_pred):
     den = (y_real_flat + F.sigmoid(y_pred_flat)).mean() + 1
     return 1 - (num / den)
 
+def focal_loss(y_real, y_pred):
+    fc = ops.sigmoid_focal_loss(y_real, y_pred) # alpha: float = 0.25, gamma: float = 2, reduction: str = 'none')
+    return fc
+
+def cross_entropy(y_real, y_pred, weighted=False, weights=[]):
+    if weighted==False:
+
+        criterion = nn.CrossEntropyLoss()
+        loss = criterion(y_real, y_pred)
+    else:
+        weight_tensor = torch.tensor(class_weights)
+
+        criterion = nn.CrossEntropyLoss(weight=weight_tensor)
+        loss = criterion(y_real, y_pred)
+    return loss
+    
 
 def main():
     # Paths and constants
