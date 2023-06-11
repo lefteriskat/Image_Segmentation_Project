@@ -269,16 +269,16 @@ class UnetBlock(nn.Module):
     
     
     def resnet_layer(self, in_channels, out_channels, kernel_size=3):
-    padding = kernel_size//2
-    cnn_bias = False
-    return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, kernel_size, padding=padding, bias=cnn_bias),
-        nn.BatchNorm2d(out_channels),
-        nn.ReLU(inplace=True),
-        nn.Conv2d(out_channels, out_channels, kernel_size, padding=padding, bias=cnn_bias),
-        nn.BatchNorm2d(out_channels),
-        nn.ReLU(inplace=True) 
-    )
+        padding = kernel_size//2
+        cnn_bias = False
+        return nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size, padding=padding, bias=cnn_bias),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, kernel_size, padding=padding, bias=cnn_bias),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True) 
+        )
     
     def cnnLayer(self, in_channels, out_channels, kernel_size=3, bn=True):
         padding = kernel_size//2 # To preserve img dimensions. Equal to int((k-1)/2)

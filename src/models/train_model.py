@@ -61,7 +61,8 @@ def main():
 
     resize_dims = 128
     batch_size = 16  # we do not have many images
-    epochs = 250
+    #epochs = 250
+    epochs = 60 ## baseline
     n_epochs_save = 10  # save every n_epochs_save epochs
     lr = 1e-3
 
@@ -138,8 +139,8 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # Model instanciating
-    # model = EncDecModel(3, 1, 64)
-    model = UNetBlocked(in_channels=3, out_channels=1, unet_block="vgg")
+    model = EncDecModel(3, 1, 64)
+    #model = UNetBlocked(in_channels=3, out_channels=1, unet_block="vgg")
     # model = UNet()
     model.to(device)
 
@@ -224,6 +225,10 @@ def main():
     # Test results and plot
     test_avg_loss = 0
     test_accuracy = 0
+    test_specificity = 0
+    test_sensitivity = 0
+    test_iou = 0
+    
     for images_batch, masks_batch in tqdm(test_loader, desc="Test"):
         masks_batch = masks_batch.float().unsqueeze(1)
         images_batch, masks_batch = images_batch.to(device), masks_batch.to(device)
@@ -235,9 +240,16 @@ def main():
         test_accuracy += prediction_accuracy(masks_batch, pred_sigmoided) / (
             len(test_dataset) * resize_dims**2
         )
-
+        
+        test_specificity += metrics.compute_specificity(pred_sigmoided, masks_batch).to(device) 
+        test_sensitivity += metrics.compute_sensitivity(pred_sigmoided, masks_batch).to(device)
+        test_iou += metrics.compute_iou(pred_sigmoided, masks_batch).to(device)
+        
+        test_specificity/= len(test_dataset)
+        test_sensitivity/= len(test_dataset)
+        test_iou/= len(test_dataset)
     # print(" - Test loss: %f" % test_avg_loss)
-    print(f" - Test loss: {test_avg_loss}  - Test accuracy: {test_accuracy}")
+    print(f" - Test loss: {test_avg_loss}  - Test accuracy: {test_accuracy} - Test Specificity: {test_specificity} - Test IoU: {test_iou} - Test Sensitivity: {test_sensitivity}")
 
     plot_predictions(images_batch, masks_batch, pred)
 
