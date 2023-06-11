@@ -268,11 +268,11 @@ class UnetBlock(nn.Module):
 
     def resnet_layer(self, in_channels, out_channels, kernel_size=3, bn=True):
         padding = kernel_size // 2  # To preserve img dimensions. Equal to int((k-1)/2)
-        cnn_bias = False if bn else True  # Fewer parameters to save
+        bias = False if bn else True  # Fewer parameters to save
         layers = []
         layers.append(
             nn.Conv2d(
-                in_channels, out_channels, kernel_size, padding=padding, bias=cnn_bias
+                in_channels, out_channels, kernel_size, padding=padding, bias=bias
             )
         )
         if bn:
@@ -280,7 +280,7 @@ class UnetBlock(nn.Module):
         layers.append(nn.LeakyReLU())
         layers.append(
             nn.Conv2d(
-                out_channels, out_channels, kernel_size, padding=padding, bias=cnn_bias
+                out_channels, out_channels, kernel_size, padding=padding, bias=bias
             )
         )
         if bn:

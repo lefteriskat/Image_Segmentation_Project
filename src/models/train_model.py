@@ -21,11 +21,11 @@ from src.data import universal_dataloader
 
 import src.data.utils as metrics
 
-from src.models.utils import plot_predictions
+from src.models.utils import plot_predictions, prediction_accuracy
 
 
 def bce_loss(y_real, y_pred):
-    y_pred = torch.clip(y_pred, -100, 100)
+    y_pred = torch.clip(y_pred, -10, 10)
     return torch.mean(y_pred - y_real * y_pred + torch.log(1 + torch.exp(-y_pred)))
 
 
@@ -44,7 +44,7 @@ def main():
 
     resize_dims = 128
     batch_size = 16  # we do not have many images
-    epochs = 80
+    epochs = 20
     n_epochs_save = 10  # save every n_epochs_save epochs
     lr = 1e-4
 
@@ -67,11 +67,20 @@ def main():
             A.OneOf(
                 [
                     A.Resize(width=resize_dims, height=resize_dims, p=0.5),
-                    A.RandomCrop(width=resize_dims, height=resize_dims),
+                    A.RandomCrop(width=resize_dims, height=resize_dims, p=0.5),
                 ],
                 p=1.0,
             ),
             A.Transpose(p),
+            A.OneOf(
+                [
+                    A.ToGray(p=0.2),
+                    A.RandomGamma(p=0.2),
+                    A.GaussNoise(p=0.2),
+                    A.ElasticTransform(p=0.4),
+                ],
+                p=0.5,
+            ),
             A.GaussianBlur(p=0.3),
             A.Blur(p=0.2),
             A.HorizontalFlip(p),
@@ -92,14 +101,24 @@ def main():
 
     test_transform = val_transform
 
-    train_loader, eval_loader, test_loader = universal_dataloader.getDataLoader(
-        "ph", train_transform, val_transform, test_transform, batch_size=batch_size
+    # train_loader, validation_loader, test_loader = universal_dataloader.getDataLoader(
+    #     "ph", train_transform, val_transform, test_transform, batch_size=batch_size
+    # )
+
+    train_dataset, validation_dataset, test_dataset = universal_dataloader.get_datasets(
+        "ph", train_transform, val_transform, test_transform
     )
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    validation_loader = DataLoader(
+        validation_dataset, batch_size=batch_size, shuffle=False
+    )
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # Model instanciating
     # model = EncDecModel(3, 1, 64)
-    # model = UNetBlocked(in_channels=3, out_channels=1, unet_block="resnet")
-    model = UNet()
+    model = UNetBlocked(in_channels=3, out_channels=1, unet_block="resnet")
+    # model = UNet()
     model.to(device)
 
     # Optimizer
@@ -112,13 +131,14 @@ def main():
     )
 
     # Loss function
-    # loss_func = bce_loss
-    loss_func = dice_loss
+    loss_func = bce_loss
+    # loss_func = dice_loss
     # loss_func = nn.BCEWithLogitsLoss()
 
     # Training loop
     for epoch in tqdm(range(epochs), desc="Epoch"):
         train_avg_loss = 0
+        train_accuracy = 0
         model.train()  # train mode
         train_dice_score = 0
         for images_batch, masks_batch in tqdm(
@@ -134,28 +154,28 @@ def main():
 
             # forward
             pred = model(images_batch)
+            pred_sigmoided = F.sigmoid(pred)
 
-            # pred = F.sigmoid(pred)
-            # pred = torch.where(pred>0.5, 1, 0)
-
-            loss = loss_func(masks_batch, pred)  # forward-pass
+            loss = loss_func(masks_batch, pred_sigmoided)  # forward-pass
             loss.backward()  # backward-pass
             optimizer.step()  # update weights
 
             # calculate metrics to show the user
             train_avg_loss += loss / len(train_loader)
-            Y_hat = F.sigmoid(pred).detach().cpu()
-            # print(metrics.compute_dice(Y_hat.cpu().type(torch.int64), masks_batch.cpu().type(torch.int64)))
+            train_accuracy += prediction_accuracy(masks_batch, pred_sigmoided) / (
+                len(train_dataset) * resize_dims**2
+            )
 
-        print(" - Training loss: %f" % train_avg_loss)
-
-        # if epoch%n_epochs_save==0:
-        #     torch.save()
+        print(
+            f" - Training loss: {train_avg_loss}  - Training accuracy: {train_accuracy}"
+        )
 
         # Compute the evaluation set loss
-        eval_avg_loss = 0
+        validation_avg_loss = 0
         model.eval()
-        for images_batch, masks_batch in tqdm(eval_loader, desc="Eval", leave=None):
+        for images_batch, masks_batch in tqdm(
+            validation_loader, desc="Validation", leave=None
+        ):
             masks_batch = masks_batch.float().unsqueeze(1)
             images_batch, masks_batch = images_batch.to(device), masks_batch.to(device)
             with torch.no_grad():
@@ -163,9 +183,9 @@ def main():
 
             loss = loss_func(masks_batch, pred)
 
-            eval_avg_loss += loss / len(eval_loader)
+            validation_avg_loss += loss / len(validation_dataset)
 
-        print(" - Eval loss: %f" % eval_avg_loss)
+        print(" - Validation loss: %f" % validation_avg_loss)
 
         # Adjust lr
         # scheduler.step()
@@ -178,7 +198,7 @@ def main():
         with torch.no_grad():
             pred = model(images_batch)
 
-        test_avg_loss += loss_func(masks_batch, pred) / len(test_loader)
+        test_avg_loss += loss_func(masks_batch, pred) / len(test_dataset)
 
     print(" - Test loss: %f" % test_avg_loss)
 
