@@ -196,20 +196,20 @@ def main():
 
             # calculate metrics to show the user
             train_avg_loss += loss / len(train_loader)
-            train_accuracy += utils.prediction_accuracy(masks_batch, pred_sigmoided) / (
+            train_accuracy += utils.Metrics.prediction_accuracy(masks_batch, pred_sigmoided) / (
                 len(train_dataset) * resize_dims**2
             )
 
-            tp_, tn_, fp_, fn_ = utils.get_tp_tn_fp_fn(masks_batch, pred_sigmoided)
+            tp_, tn_, fp_, fn_ = utils.Metrics.get_tp_tn_fp_fn(masks_batch, pred_sigmoided)
             
             tp += tp_
             fp += fp_
             tn += tn_
             fn += fn_
 
-        test_sens, test_spec = utils.get_sensitivity_specificity(tp,tn, fp, fn)
-        test_dice = utils.get_dice_coe(masks_batch, pred_sigmoided)
-        test_iou = utils.get_IoU(tp, fp, fn)
+        test_sens, test_spec = utils.Metrics.get_sensitivity_specificity(tp,tn, fp, fn)
+        test_dice = utils.Metrics.get_dice_coe(masks_batch, pred_sigmoided)
+        test_iou = utils.Metrics.get_IoU(tp, fp, fn)
 
         print(
             f" - Training loss: {train_avg_loss}  - Training accuracy: {train_accuracy}"
@@ -235,20 +235,20 @@ def main():
             loss = loss_func(masks_batch, pred)
 
             validation_avg_loss += loss / len(validation_dataset)
-            validation_accuracy += utils.prediction_accuracy(masks_batch, pred_sigmoided) / (
+            validation_accuracy += utils.Metrics.prediction_accuracy(masks_batch, pred_sigmoided) / (
                 len(validation_dataset) * resize_dims**2
             )
 
-            tp_, tn_, fp_, fn_ = utils.get_tp_tn_fp_fn(masks_batch, pred_sigmoided)
+            tp_, tn_, fp_, fn_ = utils.Metrics.get_tp_tn_fp_fn(masks_batch, pred_sigmoided)
             
             tp += tp_
             fp += fp_
             tn += tn_
             fn += fn_
 
-        test_sens, test_spec = utils.get_sensitivity_specificity(tp,tn, fp, fn)
-        test_dice = utils.get_dice_coe(masks_batch, pred_sigmoided)
-        test_iou = utils.get_IoU(tp, fp, fn)
+        test_sens, test_spec = utils.Metrics.get_sensitivity_specificity(tp,tn, fp, fn)
+        test_dice = utils.Metrics.get_dice_coe(masks_batch, pred_sigmoided)
+        test_iou = utils.Metrics.get_IoU(tp, fp, fn)
 
         # print(" - Validation loss: %f" % validation_avg_loss)
         print(
@@ -271,20 +271,20 @@ def main():
             pred_sigmoided = F.sigmoid(pred)
 
         test_avg_loss += loss_func(masks_batch, pred) / len(test_dataset)
-        test_accuracy += utils.prediction_accuracy(masks_batch, pred_sigmoided) / (
+        test_accuracy += utils.Metrics.prediction_accuracy(masks_batch, pred_sigmoided) / (
             len(test_dataset) * resize_dims**2
         )
 
-        tp_, tn_, fp_, fn_ = utils.get_tp_tn_fp_fn(masks_batch, pred_sigmoided)
+        tp_, tn_, fp_, fn_ = utils.Metrics.get_tp_tn_fp_fn(masks_batch, pred_sigmoided)
             
         tp += tp_
         fp += fp_
         tn += tn_
         fn += fn_
 
-    test_sens, test_spec = utils.get_sensitivity_specificity(tp,tn, fp, fn)
-    test_dice = utils.get_dice_coe(masks_batch, pred_sigmoided)
-    test_iou = utils.get_IoU(tp, fp, fn)
+    test_sens, test_spec = utils.Metrics.get_sensitivity_specificity(tp,tn, fp, fn)
+    test_dice = utils.Metrics.get_dice_coe(masks_batch, pred_sigmoided)
+    test_iou = utils.Metrics.get_IoU(tp, fp, fn)
     # print(" - Test loss: %f" % test_avg_loss)
     print(f" - Test loss: {test_avg_loss}  - Test accuracy: {test_accuracy}")
     print(f" - Test sensitivity: {test_sens}  - Test specificity: {test_spec}")

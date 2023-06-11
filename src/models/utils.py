@@ -69,51 +69,106 @@ def plot_predictions(
     plt.show()
 
 
-def prediction_accuracy(y_real:Tensor, y_pred:Tensor, segm_threshold:float=0.5)->int:
-    y_pred = torch.where(y_pred > segm_threshold, 1, 0)
-
-    return (y_pred == y_real).sum().cpu().item()
 
 
-def get_tp_tn_fp_fn(y_true:Tensor, y_pred_sigm:Tensor, segm_threshold:float=0.5)->Tuple[int]:
-    y_true = y_true.cpu()
-    y_true = y_true.type(torch.int64)
-
-    y_pred = y_pred_sigm.cpu()
-    y_pred = torch.where(y_pred>segm_threshold, 1, 0)
-    y_pred = y_pred.type(torch.int64)
-
-    true_positives = ((y_pred==1)&(y_true==1)).sum().item()
-    true_negatives = ((y_pred==0)&(y_true==0)).sum().item()
-    false_positives = ((y_pred==1)&(y_true==0)).sum().item()
-    false_negatives = ((y_pred==0)&(y_true==1)).sum().item()
-
-    return true_positives, true_negatives, false_positives, false_negatives
 
 
-def get_sensitivity_specificity(tp:int, tn:int, fp:int, fn:int)->Tuple[float]:
-    sensitivity = tp/(tp+fn)
-    specificity = tn/(tn+fp)
-
-    return sensitivity, specificity
 
 
-def get_dice_loss(y_true:Tensor, y_pred_sigm:Tensor)->float:
-    y_real_flat = y_true.view(y_true.size(0), -1)
-    y_pred_flat = y_pred_sigm.view(y_pred_sigm.size(0), -1)
-    num = (2*y_real_flat*y_pred_flat +1).mean()
-    den = (y_real_flat+y_pred_flat).mean()+1
-    return 1-(num/den)
-
-def get_dice_coe(y_true:Tensor, y_pred_sigm:Tensor, segm_threshold=0.5, epsilon=1e-3)->float:
-    y_pred_mask = torch.where(y_pred_sigm>segm_threshold, 1, 0)
-    num = (2*y_pred_mask*y_true).sum()
-    den = (y_pred_mask+y_true).sum()
-    if den==0:
-        den += epsilon
-    return num/den
 
 
-def get_IoU(tp:int, fp:int, fn:int)->float:
-    return tp/(tp+fp+fn)
+class Metrics:
+    '''
+    Class that stores functions that return different segmentation metrics'''
 
+    def prediction_accuracy(y_real:Tensor, y_pred:Tensor, segm_threshold:float=0.5)->int:
+        y_pred = torch.where(y_pred > segm_threshold, 1, 0)
+
+        return (y_pred == y_real).sum().cpu().item()
+
+
+
+    def get_IoU(tp:int, fp:int, fn:int)->float:
+        return tp/(tp+fp+fn)
+        
+
+    def get_dice_coe(y_true:Tensor, y_pred_sigm:Tensor, segm_threshold=0.5, epsilon=1e-3)->float:
+        y_pred_mask = torch.where(y_pred_sigm>segm_threshold, 1, 0)
+        num = (2*y_pred_mask*y_true).sum()
+        den = (y_pred_mask+y_true).sum()
+        if den==0:
+            den += epsilon
+        return num/den
+    
+
+    def get_tp_tn_fp_fn(y_true:Tensor, y_pred_sigm:Tensor, segm_threshold:float=0.5)->Tuple[int]:
+        y_true = y_true.cpu()
+        y_true = y_true.type(torch.int64)
+
+        y_pred = y_pred_sigm.cpu()
+        y_pred = torch.where(y_pred>segm_threshold, 1, 0)
+        y_pred = y_pred.type(torch.int64)
+
+        true_positives = ((y_pred==1)&(y_true==1)).sum().item()
+        true_negatives = ((y_pred==0)&(y_true==0)).sum().item()
+        false_positives = ((y_pred==1)&(y_true==0)).sum().item()
+        false_negatives = ((y_pred==0)&(y_true==1)).sum().item()
+
+        return true_positives, true_negatives, false_positives, false_negatives
+
+    
+    def get_sensitivity_specificity(tp:int, tn:int, fp:int, fn:int)->Tuple[float]:
+        sensitivity = tp/(tp+fn)
+        specificity = tn/(tn+fp)
+
+        return sensitivity, specificity
+
+
+
+
+class Losses:
+    '''
+    Class that holds loss functions that can be used to train segmentation models
+    '''
+    def focal_loss(y_real:Tensor, y_pred:Tensor)->Tensor:
+        ### y_real and y_pred is [batch_n, channels=1, h, w]: [6, 1, 128, 128]
+        y_real_flat = y_real.view(y_real.size(0), -1)
+        y_pred_flat = y_pred.view(y_pred.size(0), -1)
+        
+        gamma = 2 # a good value from the paper of Lin
+        weight = (1-F.sigmoid(y_pred_flat)).pow(gamma)
+        tmp = weight*y_real_flat*torch.log(F.sigmoid(y_pred_flat)) + (1-y_real_flat)*torch.log(1-F.sigmoid(y_pred_flat))
+        return -torch.mean(tmp)
+    
+    def bce_loss(y_real:Tensor, y_pred:Tensor)->Tensor:
+        y_pred = torch.clip(y_pred, -10, 10)
+        return torch.mean(y_pred - y_real * y_pred + torch.log(1 + torch.exp(-y_pred)))
+    
+    def dice_loss(y_real:Tensor, y_pred:Tensor)->Tensor:
+        ### y_real and y_pred is [batch_n, channels=1, h, w]: [6, 1, 128, 128]
+        y_real_flat = y_real.view(y_real.size(0), -1)
+        y_pred_flat = y_pred.view(y_pred.size(0), -1)
+        num = (2 * y_real_flat * F.sigmoid(y_pred_flat) + 1).mean()
+        den = (y_real_flat + F.sigmoid(y_pred_flat)).mean() + 1
+        return 1 - (num / den)
+    
+    def bce_total_variation(y_real:Tensor, y_pred:Tensor)->Tensor:
+
+        def total_variation_term():        
+            y_pred_x = y_pred[:,:,:-1,:]
+            y_pred_xp1 = y_pred[:,:,1:,:]
+            
+            y_pred_y = y_pred[:,:,:,:-1]
+            y_pred_yp1 = y_pred[:,:,:,1:]
+            
+            y_pred_x_flat = torch.flatten(y_pred_x,start_dim=1)
+            y_pred_xp1_flat = torch.flatten(y_pred_xp1,start_dim=1)
+            
+            y_pred_y_flat = torch.flatten(y_pred_y,start_dim=1)
+            y_pred_yp1_flat = torch.flatten(y_pred_yp1,start_dim=1)
+            
+            term1 = torch.sum( torch.abs(F.sigmoid(y_pred_xp1_flat) - F.sigmoid(y_pred_x_flat)) )
+            term2 = torch.sum( torch.abs(F.sigmoid(y_pred_yp1_flat) - F.sigmoid(y_pred_y_flat)) )
+            return term1 + term2
+
+        return Losses.bce_loss(y_real, y_pred) + 0.1*total_variation_term()
