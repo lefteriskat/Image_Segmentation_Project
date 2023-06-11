@@ -120,6 +120,7 @@ def main():
         ]
     )
 
+
     val_transform = A.Compose(
         [
             A.Resize(width=resize_dims, height=resize_dims),
@@ -129,6 +130,10 @@ def main():
     )
 
     test_transform = val_transform
+
+
+    #### CHANGE THIS!! FOR BASELINE ONLY!!!!
+    train_transform = val_transform
 
     # train_loader, validation_loader, test_loader = universal_dataloader.getDataLoader(
     #     "ph", train_transform, val_transform, test_transform, batch_size=batch_size
