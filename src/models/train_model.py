@@ -150,8 +150,8 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=False)
 
     # Model instanciating
-    model = EncDecModel(3, 1, 64)
-    # model = UNetBlocked(in_channels=3, out_channels=1, unet_block=model_name)
+    # model = EncDecModel(3, 1, 64)
+    model = UNetBlocked(in_channels=3, out_channels=1, unet_block=model_name)
     # model = UNet()
     model.to(device)
 
@@ -174,8 +174,7 @@ def main():
         train_avg_loss = 0
         train_accuracy = 0
         model.train()  # train mode
-        train_dice_score = 0
-        # tp, tn, fp, fn = [0]*4
+        tp, tn, fp, fn = [0]*4
         for images_batch, masks_batch in tqdm(
             train_loader, leave=None, desc="Training"
         ):
@@ -203,21 +202,25 @@ def main():
 
             tp_, tn_, fp_, fn_ = utils.get_tp_tn_fp_fn(masks_batch, pred_sigmoided)
             
-        #     tp += tp_
-        #     fp += fp_
-        #     tn += tn_
-        #     fn += fn_
+            tp += tp_
+            fp += fp_
+            tn += tn_
+            fn += fn_
 
-        # train_sens, train_spec = utils.get_sensitivity_specificity(tp,tn, fp, fn)
-
+        test_sens, test_spec = utils.get_sensitivity_specificity(tp,tn, fp, fn)
+        test_dice = utils.get_dice_coe(masks_batch, pred_sigmoided)
+        test_iou = utils.get_IoU(tp, fp, fn)
 
         print(
             f" - Training loss: {train_avg_loss}  - Training accuracy: {train_accuracy}"
         )
+        print(f" - Train sensitivity: {test_sens}  - Train specificity: {test_spec}")
+        print(f" - Train DICE: {test_dice}  - Train IoU: {test_iou}")
 
         # Compute the evaluation set loss
         validation_avg_loss = 0
         validation_accuracy = 0
+        tp, tn, fp, fn = [0]*4
         model.eval()
         for images_batch, masks_batch in tqdm(
             validation_loader, desc="Validation", leave=None
@@ -236,11 +239,23 @@ def main():
                 len(validation_dataset) * resize_dims**2
             )
 
+            tp_, tn_, fp_, fn_ = utils.get_tp_tn_fp_fn(masks_batch, pred_sigmoided)
+            
+            tp += tp_
+            fp += fp_
+            tn += tn_
+            fn += fn_
+
+        test_sens, test_spec = utils.get_sensitivity_specificity(tp,tn, fp, fn)
+        test_dice = utils.get_dice_coe(masks_batch, pred_sigmoided)
+        test_iou = utils.get_IoU(tp, fp, fn)
+
         # print(" - Validation loss: %f" % validation_avg_loss)
         print(
             f" - Validation loss: {validation_avg_loss}  - Validation accuracy: {validation_accuracy}"
         )
-
+        print(f" - Validation sensitivity: {test_sens}  - Validation specificity: {test_spec}")
+        print(f" - Validation DICE: {test_dice}  - Validation IoU: {test_iou}")
         # Adjust lr
         scheduler.step()
 
