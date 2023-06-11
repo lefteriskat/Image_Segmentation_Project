@@ -1,9 +1,18 @@
 from src.data.DRIVE_dataloader import DRIVEDataset
 from src.data.ph_dataset import PH2Dataset
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms as transforms
 import numpy as np
+
+from pathlib import Path
+
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
+import matplotlib.pyplot as plt
+import matplotlib.image
+
+from PIL import Image
 
 
 def getDataLoader(
@@ -80,7 +89,8 @@ def get_datasets(
     test_transforms,
     train_fraction: float = 0.7,
     val_fraction: float = 0.1,
-    test_fraction: float = 0.2):
+    test_fraction: float = 0.2,
+):
     target_train_dataset: torch.utils.data.Dataset = None
     target_val_dataset: torch.utils.data.Dataset = None
     target_test_dataset: torch.utils.data.Dataset = None
@@ -128,19 +138,78 @@ def get_datasets(
     return train_dataset, val_dataset, test_dataset
 
 
-def main():
-    transform = transforms.Compose(
-        [transforms.Resize((256, 256)), transforms.ToTensor()]
+def create_test_image_dir(
+    test_dataset_name: str, resize_dims: int = 128, n_images: int = 10
+) -> None:
+    root_dir_path = f"test_images_{test_dataset_name}"
+    path_ = Path(root_dir_path)
+    images_path = path_ / "images"
+    masks_path = path_ / "masks"
+
+    path_.mkdir(exist_ok=True)
+    images_path.mkdir(exist_ok=True)
+    masks_path.mkdir(exist_ok=True)
+
+    transforms = A.Compose(
+        [
+            A.Resize(width=resize_dims, height=resize_dims),
+            # A.Normalize([0.0] * 3, [1.0] * 3, max_pixel_value=255.0),
+            ToTensorV2(),
+        ]
     )
-    train, val, test = getDataLoader("drive", transform, transform, transform)
-    train, val, test = getDataLoader("ph", transform, transform, transform)
 
-    # print(len(train))
+    _, _, test_dataset = get_datasets(
+        test_dataset_name, transforms, transforms, transforms
+    )
 
-    a, b = next(iter(train))
+    dataset_len = len(test_dataset)
+    if dataset_len < n_images:
+        n_images = dataset_len
 
-    print(a.shape, b.shape)
-    print(a.dtype, b.dtype)
+    for i in range(n_images):
+        image, mask = test_dataset[i]
+
+        image = image.permute(1, 2, 0).numpy()
+
+        # im = Image.fromarray(image)
+        # im.save(images_path.as_posix() + f"/{test_dataset_name}_{i}.png", "PNG")
+
+        matplotlib.image.imsave(
+            images_path.as_posix() + f"/{test_dataset_name}_{i}.png", image
+        )
+
+        matplotlib.image.imsave(
+            masks_path.as_posix() + f"/{test_dataset_name}_{i}.png",
+            mask.squeeze().numpy(),
+            cmap="gray",
+        )
+
+
+# fig = plt.figure()
+# plt.imshow(image)
+# plt.savefig()
+# plt.show()
+
+
+def main():
+    # transform = transforms.Compose(
+    #     [transforms.Resize((256, 256)), transforms.ToTensor()]
+    # )
+    # train, val, test = getDataLoader("drive", transform, transform, transform)
+    # train, val, test = getDataLoader("ph", transform, transform, transform)
+
+    # # print(len(train))
+
+    # a, b = next(iter(train))
+
+    # print(a.shape, b.shape)
+    # print(a.dtype, b.dtype)
+
+    resize_dims = 256
+
+    create_test_image_dir("ph", n_images=10, resize_dims=resize_dims)
+
+    create_test_image_dir("drive", n_images=10, resize_dims=resize_dims)
 
 
 if __name__ == "__main__":
