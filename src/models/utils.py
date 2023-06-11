@@ -105,4 +105,6 @@ def get_dice_coe(y_true:Tensor, y_pred_sigm:Tensor)->float:
     den = (y_real_flat+y_pred_flat).mean()+1
     return 1-(num/den)
 
+def get_IoU(tp:int, fp:int, fn:int)->float:
+    return tp/(tp+fp+fn)
 

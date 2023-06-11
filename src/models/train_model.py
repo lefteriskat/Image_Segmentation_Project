@@ -142,7 +142,7 @@ def main():
     validation_loader = DataLoader(
         validation_dataset, batch_size=batch_size, shuffle=False
     )
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=False)
 
     # Model instanciating
     model = EncDecModel(3, 1, 64)
@@ -263,10 +263,12 @@ def main():
         fn += fn_
 
     test_sens, test_spec = utils.get_sensitivity_specificity(tp,tn, fp, fn)
-
+    test_dice = utils.get_dice_coe(masks_batch, pred_sigmoided)
+    test_iou = utils.get_IoU(tp, fp, fn)
     # print(" - Test loss: %f" % test_avg_loss)
     print(f" - Test loss: {test_avg_loss}  - Test accuracy: {test_accuracy}")
     print(f" - Test sensitivity: {test_sens}  - Test specificity: {test_spec}")
+    print(f" - Test DICE: {test_dice}  - Test IoU: {test_iou}")
 
     utils.plot_predictions(images_batch, masks_batch, pred)
 
