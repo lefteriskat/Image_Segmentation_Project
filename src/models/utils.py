@@ -98,12 +98,21 @@ def get_sensitivity_specificity(tp:int, tn:int, fp:int, fn:int)->Tuple[float]:
     return sensitivity, specificity
 
 
-def get_dice_coe(y_true:Tensor, y_pred_sigm:Tensor)->float:
+def get_dice_loss(y_true:Tensor, y_pred_sigm:Tensor)->float:
     y_real_flat = y_true.view(y_true.size(0), -1)
     y_pred_flat = y_pred_sigm.view(y_pred_sigm.size(0), -1)
     num = (2*y_real_flat*y_pred_flat +1).mean()
     den = (y_real_flat+y_pred_flat).mean()+1
     return 1-(num/den)
+
+def get_dice_coe(y_true:Tensor, y_pred_sigm:Tensor, segm_threshold=0.5, epsilon=1e-3)->float:
+    y_pred_mask = torch.where(y_pred_sigm>segm_threshold, 1, 0)
+    num = (2*y_pred_mask*y_true).sum()
+    den = (y_pred_mask+y_true).sum()
+    if den==0:
+        den += epsilon
+    return num/den
+
 
 def get_IoU(tp:int, fp:int, fn:int)->float:
     return tp/(tp+fp+fn)
