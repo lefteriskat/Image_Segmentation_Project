@@ -52,7 +52,7 @@ def plot_predictions(
             data = masks_true
             cmap = "gray"
         if i == 2:
-            data = y_hat
+            data = y_hat_
             cmap = "gray"
 
         for j in range(num_cols):
@@ -73,3 +73,7 @@ def prediction_accuracy(y_real, y_pred, segm_threshold=0.5):
     y_pred = torch.where(y_pred > segm_threshold, 1, 0)
 
     return (y_pred == y_real).sum().cpu().item()
+
+
+def calculate_sensitivity_specificity():
+    pass

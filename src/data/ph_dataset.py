@@ -61,8 +61,9 @@ class PH2Dataset(torch.utils.data.Dataset):
         # fn = lambda x: 255 if x > thresh else 0
         # lesion_mask = lesion.convert("L").point(fn, mode="1")
 
-        image_np = np.array(image)
-        lesion_np = np.array(lesion, dtype=np.float32)
+        image_np = np.array(image) # Do not rescale to 0-1 from 0-255, albumentation transforms fails
+        lesion_np = np.array(lesion, dtype=np.float32) # Only 2 values in this mask img 0 and 255
+
         lesion_np[lesion_np == 255] = 1.0
 
         # Perform the transformations to the image and the mask
