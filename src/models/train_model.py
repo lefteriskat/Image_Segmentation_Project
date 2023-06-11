@@ -44,9 +44,9 @@ def main():
 
     resize_dims = 128
     batch_size = 16  # we do not have many images
-    epochs = 20
+    epochs = 250
     n_epochs_save = 10  # save every n_epochs_save epochs
-    lr = 1e-4
+    lr = 1e-3
 
     # Names and other identifiers
     model_name = "baseline"
@@ -67,7 +67,12 @@ def main():
             A.OneOf(
                 [
                     A.Resize(width=resize_dims, height=resize_dims, p=0.5),
-                    A.RandomCrop(width=resize_dims, height=resize_dims, p=0.5),
+                    A.RandomSizedCrop(
+                        min_max_height=[resize_dims / 4, resize_dims / 2],
+                        width=resize_dims,
+                        height=resize_dims,
+                        p=0.5,
+                    ),
                 ],
                 p=1.0,
             ),
@@ -117,7 +122,7 @@ def main():
 
     # Model instanciating
     # model = EncDecModel(3, 1, 64)
-    model = UNetBlocked(in_channels=3, out_channels=1, unet_block="resnet")
+    model = UNetBlocked(in_channels=3, out_channels=1, unet_block="vgg")
     # model = UNet()
     model.to(device)
 
@@ -127,7 +132,7 @@ def main():
 
     # lr scheduler
     scheduler = torch.optim.lr_scheduler.MultiStepLR(
-        optimizer, milestones=[50, 150, 300, 350], gamma=0.5
+        optimizer, milestones=[epochs // 4, epochs // 2, int(epochs * 0.75)], gamma=0.5
     )
 
     # Loss function
@@ -172,6 +177,7 @@ def main():
 
         # Compute the evaluation set loss
         validation_avg_loss = 0
+        validation_accuracy = 0
         model.eval()
         for images_batch, masks_batch in tqdm(
             validation_loader, desc="Validation", leave=None
@@ -180,27 +186,41 @@ def main():
             images_batch, masks_batch = images_batch.to(device), masks_batch.to(device)
             with torch.no_grad():
                 pred = model(images_batch)
+                pred_sigmoided = F.sigmoid(pred)
 
-            loss = loss_func(masks_batch, pred)
+            # loss = loss_func(masks_batch, pred)
+            loss = loss_func(masks_batch, pred_sigmoided)
 
             validation_avg_loss += loss / len(validation_dataset)
+            validation_accuracy += prediction_accuracy(masks_batch, pred_sigmoided) / (
+                len(validation_dataset) * resize_dims**2
+            )
 
-        print(" - Validation loss: %f" % validation_avg_loss)
+        # print(" - Validation loss: %f" % validation_avg_loss)
+        print(
+            f" - Validation loss: {validation_avg_loss}  - Validation accuracy: {validation_accuracy}"
+        )
 
         # Adjust lr
-        # scheduler.step()
+        scheduler.step()
 
     # Test results and plot
     test_avg_loss = 0
+    test_accuracy = 0
     for images_batch, masks_batch in tqdm(test_loader, desc="Test"):
         masks_batch = masks_batch.float().unsqueeze(1)
         images_batch, masks_batch = images_batch.to(device), masks_batch.to(device)
         with torch.no_grad():
             pred = model(images_batch)
+            pred_sigmoided = F.sigmoid(pred)
 
-        test_avg_loss += loss_func(masks_batch, pred) / len(test_dataset)
+        test_avg_loss += loss_func(masks_batch, pred_sigmoided) / len(test_dataset)
+        test_accuracy += prediction_accuracy(masks_batch, pred_sigmoided) / (
+            len(test_dataset) * resize_dims**2
+        )
 
-    print(" - Test loss: %f" % test_avg_loss)
+    # print(" - Test loss: %f" % test_avg_loss)
+    print(f" - Test loss: {test_avg_loss}  - Test accuracy: {test_accuracy}")
 
     plot_predictions(images_batch, masks_batch, pred)
 

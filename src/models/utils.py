@@ -65,21 +65,6 @@ def plot_predictions(
     # Adjust the layout and spacing of subplots
     fig.tight_layout()
 
-    # fig, ax = plt.subplots(3, n_images)
-
-    # for ax_, row in zip(ax[:, 0], titles):
-    #     ax_.set_ylabel(f"{row}")
-
-    # for i in range(n_images):
-    #     ax[0, i].imshow(images[i].permute((1, 2, 0)))
-    #     ax[0, i].set_axis_off()
-
-    #     ax[1, i].imshow(masks_true[i], cmap="gray")
-    #     ax[1, i].set_axis_off()
-
-    #     ax[2, i].imshow(y_hat[i], cmap="gray")
-    #     ax[2, i].set_axis_off()
-
     plt.savefig(f"{title}.png")
     plt.show()
 
