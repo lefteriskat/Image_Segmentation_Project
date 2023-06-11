@@ -63,12 +63,12 @@ def main():
 
     resize_dims = 128
     batch_size = 16  # we do not have many images
-    epochs = 250
+    epochs = 25
     n_epochs_save = 10  # save every n_epochs_save epochs
     lr = 1e-3
 
     # Names and other identifiers
-    model_name = "baseline"
+    model_name = "vgg"
     
 
     torch.manual_seed(seed)
@@ -144,7 +144,7 @@ def main():
 
     # Model instanciating
     # model = EncDecModel(3, 1, 64)
-    model = UNetBlocked(in_channels=3, out_channels=1, unet_block="resnet")
+    model = UNetBlocked(in_channels=3, out_channels=1, unet_block=model_name)
     # model = UNet()
     model.to(device)
 
@@ -168,6 +168,7 @@ def main():
         train_accuracy = 0
         model.train()  # train mode
         train_dice_score = 0
+        tp, tn, fp, fn = [0]*4
         for images_batch, masks_batch in tqdm(
             train_loader, leave=None, desc="Training"
         ):
@@ -193,9 +194,20 @@ def main():
                 len(train_dataset) * resize_dims**2
             )
 
+            tp_, tn_, fp_, fn_ = utils.get_tp_tn_fp_fn(masks_batch, pred_sigmoided)
+            
+            tp += tp_
+            fp += fp_
+            tn += tn_
+            fn += fn_
+
+        train_sens, train_spec = utils.get_sensitivity_specificity(tp,tn, fp, fn)
+
+
         print(
             f" - Training loss: {train_avg_loss}  - Training accuracy: {train_accuracy}"
         )
+        print(f"Training sensitivity: {train_sens}, Training specificity: {train_spec}")
 
         # Compute the evaluation set loss
         validation_avg_loss = 0
