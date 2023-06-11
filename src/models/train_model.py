@@ -48,7 +48,7 @@ def cross_entropy(y_real, y_pred, weighted=False, weights=[]):
         criterion = nn.CrossEntropyLoss()
         loss = criterion(y_real, y_pred)
     else:
-        weight_tensor = torch.tensor(class_weights)
+        weight_tensor = torch.tensor(weights)
 
         criterion = nn.CrossEntropyLoss(weight=weight_tensor)
         loss = criterion(y_real, y_pred)
@@ -170,7 +170,7 @@ def main():
         train_accuracy = 0
         model.train()  # train mode
         train_dice_score = 0
-        tp, tn, fp, fn = [0]*4
+        # tp, tn, fp, fn = [0]*4
         for images_batch, masks_batch in tqdm(
             train_loader, leave=None, desc="Training"
         ):
@@ -186,7 +186,7 @@ def main():
             pred = model(images_batch)
             pred_sigmoided = F.sigmoid(pred)
 
-            loss = loss_func(masks_batch, pred_sigmoided)  # forward-pass
+            loss = loss_func(masks_batch, pred)  # forward-pass
             loss.backward()  # backward-pass
             optimizer.step()  # update weights
 
@@ -198,18 +198,17 @@ def main():
 
             tp_, tn_, fp_, fn_ = utils.get_tp_tn_fp_fn(masks_batch, pred_sigmoided)
             
-            tp += tp_
-            fp += fp_
-            tn += tn_
-            fn += fn_
+        #     tp += tp_
+        #     fp += fp_
+        #     tn += tn_
+        #     fn += fn_
 
-        train_sens, train_spec = utils.get_sensitivity_specificity(tp,tn, fp, fn)
+        # train_sens, train_spec = utils.get_sensitivity_specificity(tp,tn, fp, fn)
 
 
         print(
             f" - Training loss: {train_avg_loss}  - Training accuracy: {train_accuracy}"
         )
-        print(f"Training sensitivity: {train_sens}, Training specificity: {train_spec}")
 
         # Compute the evaluation set loss
         validation_avg_loss = 0
@@ -225,7 +224,7 @@ def main():
                 pred_sigmoided = F.sigmoid(pred)
 
             # loss = loss_func(masks_batch, pred)
-            loss = loss_func(masks_batch, pred_sigmoided)
+            loss = loss_func(masks_batch, pred)
 
             validation_avg_loss += loss / len(validation_dataset)
             validation_accuracy += utils.prediction_accuracy(masks_batch, pred_sigmoided) / (
@@ -243,6 +242,7 @@ def main():
     # Test results and plot
     test_avg_loss = 0
     test_accuracy = 0
+    tp, tn, fp, fn = [0]*4
     for images_batch, masks_batch in tqdm(test_loader, desc="Test"):
         masks_batch = masks_batch.float().unsqueeze(1)
         images_batch, masks_batch = images_batch.to(device), masks_batch.to(device)
@@ -250,13 +250,23 @@ def main():
             pred = model(images_batch)
             pred_sigmoided = F.sigmoid(pred)
 
-        test_avg_loss += loss_func(masks_batch, pred_sigmoided) / len(test_dataset)
+        test_avg_loss += loss_func(masks_batch, pred) / len(test_dataset)
         test_accuracy += utils.prediction_accuracy(masks_batch, pred_sigmoided) / (
             len(test_dataset) * resize_dims**2
         )
 
+        tp_, tn_, fp_, fn_ = utils.get_tp_tn_fp_fn(masks_batch, pred_sigmoided)
+            
+        tp += tp_
+        fp += fp_
+        tn += tn_
+        fn += fn_
+
+    test_sens, test_spec = utils.get_sensitivity_specificity(tp,tn, fp, fn)
+
     # print(" - Test loss: %f" % test_avg_loss)
     print(f" - Test loss: {test_avg_loss}  - Test accuracy: {test_accuracy}")
+    print(f" - Test sensitivity: {test_sens}  - Test specificity: {test_spec}")
 
     utils.plot_predictions(images_batch, masks_batch, pred)
 

@@ -96,3 +96,13 @@ def get_sensitivity_specificity(tp:int, tn:int, fp:int, fn:int)->Tuple[float]:
     specificity = tn/(tn+fp)
 
     return sensitivity, specificity
+
+
+def get_dice_coe(y_true:Tensor, y_pred_sigm:Tensor)->float:
+    y_real_flat = y_true.view(y_true.size(0), -1)
+    y_pred_flat = y_pred_sigm.view(y_pred_sigm.size(0), -1)
+    num = (2*y_real_flat*y_pred_flat +1).mean()
+    den = (y_real_flat+y_pred_flat).mean()+1
+    return 1-(num/den)
+
+
