@@ -59,11 +59,13 @@ def main():
     # Paths and constants
     ph2_data_path = "/dtu/datasets1/02514/PH2_Dataset_images"
 
+    dataset_name = 'ph' # 'drive' or 'ph'
+
     seed = 7
 
     resize_dims = 128
     batch_size = 16  # we do not have many images
-    epochs = 25
+    epochs = 250
     n_epochs_save = 10  # save every n_epochs_save epochs
     lr = 1e-3
 
@@ -133,7 +135,7 @@ def main():
     # )
 
     train_dataset, validation_dataset, test_dataset = universal_dataloader.get_datasets(
-        "ph", train_transform, val_transform, test_transform
+        dataset_name, train_transform, val_transform, test_transform
     )
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
@@ -143,8 +145,8 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # Model instanciating
-    # model = EncDecModel(3, 1, 64)
-    model = UNetBlocked(in_channels=3, out_channels=1, unet_block=model_name)
+    model = EncDecModel(3, 1, 64)
+    # model = UNetBlocked(in_channels=3, out_channels=1, unet_block=model_name)
     # model = UNet()
     model.to(device)
 
