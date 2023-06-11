@@ -39,13 +39,39 @@ class DRIVEDataset(torch.utils.data.Dataset):
         label_path = self.label_paths[idx]
 
         # Open the image and the manual segmentation
-        image = Image.open(image_path)
-        label = Image.open(label_path)
+        # image = Image.open(image_path)
+        # label = Image.open(label_path)
         
+        # # Transform the data
+        # X = self.transform(image)
+        # Y = self.transform(label)
+
+
+        image = Image.open(image_path).convert("RGB")
+        label = Image.open(label_path).convert("L")
+
+        ## Just to make sure, convert and binarize with a high threshold
+        # thresh = 200
+        # fn = lambda x: 255 if x > thresh else 0
+        # lesion_mask = lesion.convert("L").point(fn, mode="1")
+
+        image_np = np.array(image) # Do not rescale to 0-1 from 0-255, albumentation transforms fails
+        label_np = np.array(label, dtype=np.float32) # Only 2 values in this mask img 0 and 255
+
+        label_np[label_np == 255] = 1.0 
+        
+
+        # Perform the transformations to the image and the mask
+        augmented = self.transform(image=image_np, mask=label_np)
+        
+
         # Transform the data
-        X = self.transform(image)
-        Y = self.transform(label)
-        
+        # X = self.transform(image)
+        # Y = self.transform(lesion)
+
+        X = augmented["image"]
+        Y = augmented["mask"]
+
         return X, Y
 
 
