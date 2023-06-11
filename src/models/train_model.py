@@ -21,7 +21,7 @@ from src.data import universal_dataloader
 
 import src.data.utils as metrics
 
-from src.models.utils import plot_predictions, prediction_accuracy
+import src.models.utils as utils
 
 
 def bce_loss(y_real, y_pred):
@@ -42,6 +42,8 @@ def main():
     # Paths and constants
     ph2_data_path = "/dtu/datasets1/02514/PH2_Dataset_images"
 
+    seed = 7
+
     resize_dims = 128
     batch_size = 16  # we do not have many images
     epochs = 250
@@ -50,6 +52,9 @@ def main():
 
     # Names and other identifiers
     model_name = "baseline"
+    
+
+    torch.manual_seed(seed)
 
     # Device setting
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -122,7 +127,7 @@ def main():
 
     # Model instanciating
     # model = EncDecModel(3, 1, 64)
-    model = UNetBlocked(in_channels=3, out_channels=1, unet_block="vgg")
+    model = UNetBlocked(in_channels=3, out_channels=1, unet_block="resnet")
     # model = UNet()
     model.to(device)
 
@@ -167,7 +172,7 @@ def main():
 
             # calculate metrics to show the user
             train_avg_loss += loss / len(train_loader)
-            train_accuracy += prediction_accuracy(masks_batch, pred_sigmoided) / (
+            train_accuracy += utils.prediction_accuracy(masks_batch, pred_sigmoided) / (
                 len(train_dataset) * resize_dims**2
             )
 
@@ -192,7 +197,7 @@ def main():
             loss = loss_func(masks_batch, pred_sigmoided)
 
             validation_avg_loss += loss / len(validation_dataset)
-            validation_accuracy += prediction_accuracy(masks_batch, pred_sigmoided) / (
+            validation_accuracy += utils.prediction_accuracy(masks_batch, pred_sigmoided) / (
                 len(validation_dataset) * resize_dims**2
             )
 
@@ -215,14 +220,14 @@ def main():
             pred_sigmoided = F.sigmoid(pred)
 
         test_avg_loss += loss_func(masks_batch, pred_sigmoided) / len(test_dataset)
-        test_accuracy += prediction_accuracy(masks_batch, pred_sigmoided) / (
+        test_accuracy += utils.prediction_accuracy(masks_batch, pred_sigmoided) / (
             len(test_dataset) * resize_dims**2
         )
 
     # print(" - Test loss: %f" % test_avg_loss)
     print(f" - Test loss: {test_avg_loss}  - Test accuracy: {test_accuracy}")
 
-    plot_predictions(images_batch, masks_batch, pred)
+    utils.plot_predictions(images_batch, masks_batch, pred)
 
 
 if __name__ == "__main__":

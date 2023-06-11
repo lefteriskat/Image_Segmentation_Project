@@ -75,5 +75,24 @@ def prediction_accuracy(y_real, y_pred, segm_threshold=0.5):
     return (y_pred == y_real).sum().cpu().item()
 
 
-def calculate_sensitivity_specificity():
-    pass
+def calculate_sensitivity_specificity(y_true, y_pred, segm_threshold=0.5):
+    y_true = y_true.cpu()
+    y_true = y_true.type(torch.int64)
+
+    y_pred = y_pred.cpu()
+    y_pred = torch.where(y_pred>segm_threshold, 1, 0)
+    y_pred = y_pred.type(torch.int64)
+
+
+
+    true_positives = ((y_pred==1)&(y_true==1)).sum().item()
+    true_negatives = ((y_pred==0)&(y_true==0)).sum().item()
+    false_positives = ((y_pred==1)&(y_true==0)).sum().item()
+    false_negatives = ((y_pred==0)&(y_true==1)).sum().item()
+
+    sensitivity = true_positives/(true_positives+false_negatives)
+
+    # Specificity = (True Negative)/(True Negative + False Positive)
+    specificity = true_negatives/(true_negatives+false_positives)
+
+    return sensitivity, specificity

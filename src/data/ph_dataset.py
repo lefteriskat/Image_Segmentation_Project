@@ -64,10 +64,12 @@ class PH2Dataset(torch.utils.data.Dataset):
         image_np = np.array(image) # Do not rescale to 0-1 from 0-255, albumentation transforms fails
         lesion_np = np.array(lesion, dtype=np.float32) # Only 2 values in this mask img 0 and 255
 
-        lesion_np[lesion_np == 255] = 1.0
+        lesion_np[lesion_np == 255] = 1.0 
+        
 
         # Perform the transformations to the image and the mask
         augmented = self.transform(image=image_np, mask=lesion_np)
+        
 
         # Transform the data
         # X = self.transform(image)

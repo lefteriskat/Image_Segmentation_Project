@@ -80,8 +80,7 @@ def get_datasets(
     test_transforms,
     train_fraction: float = 0.7,
     val_fraction: float = 0.1,
-    test_fraction: float = 0.2,
-):
+    test_fraction: float = 0.2):
     target_train_dataset: torch.utils.data.Dataset = None
     target_val_dataset: torch.utils.data.Dataset = None
     target_test_dataset: torch.utils.data.Dataset = None
