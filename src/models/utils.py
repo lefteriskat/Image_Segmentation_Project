@@ -4,16 +4,16 @@ import torch
 import torch.nn.functional as F
 
 from torch import Tensor
-
+from typing import Tuple
 
 def plot_predictions(
     images: Tensor,
     masks_true: Tensor,
     y_pred: Tensor,
     n_images: int = 4,
-    title="predictions_plot",
-    segm_threshold=0.5,
-):
+    title:str="predictions_plot",
+    segm_threshold:float=0.5,
+)->None:
     """
     Images: Images tensor of batch size
     Masks tensor of batch size equal to images
@@ -69,13 +69,13 @@ def plot_predictions(
     plt.show()
 
 
-def prediction_accuracy(y_real, y_pred, segm_threshold=0.5):
+def prediction_accuracy(y_real:Tensor, y_pred:Tensor, segm_threshold:float=0.5)->int:
     y_pred = torch.where(y_pred > segm_threshold, 1, 0)
 
     return (y_pred == y_real).sum().cpu().item()
 
 
-def get_tp_tn_fp_fn(y_true, y_pred_sigm, segm_threshold=0.5):
+def get_tp_tn_fp_fn(y_true:Tensor, y_pred_sigm:Tensor, segm_threshold:float=0.5)->Tuple[int]:
     y_true = y_true.cpu()
     y_true = y_true.type(torch.int64)
 
@@ -91,7 +91,7 @@ def get_tp_tn_fp_fn(y_true, y_pred_sigm, segm_threshold=0.5):
     return true_positives, true_negatives, false_positives, false_negatives
 
 
-def get_sensitivity_specificity(tp, tn, fp, fn):
+def get_sensitivity_specificity(tp:int, tn:int, fp:int, fn:int)->Tuple[float]:
     sensitivity = tp/(tp+fn)
     specificity = tn/(tn+fp)
 
