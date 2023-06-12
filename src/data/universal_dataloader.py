@@ -4,6 +4,11 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms as transforms
 import numpy as np
+from src.data.utils import calculate_class_weights
+
+import albumentations as A
+import albumentations.augmentations as augm
+from albumentations.pytorch import ToTensorV2
 
 from pathlib import Path
 
@@ -138,6 +143,7 @@ def get_datasets(
     return train_dataset, val_dataset, test_dataset
 
 
+<<<<<<< Updated upstream
 def create_test_image_dir(
     test_dataset_name: str, resize_dims: int = 128, n_images: int = 10
 ) -> None:
@@ -157,6 +163,31 @@ def create_test_image_dir(
             ToTensorV2(),
         ]
     )
+=======
+def main():
+
+    torch.manual_seed(7)
+    transform = A.Compose(
+        [
+            A.Resize(width=128, height=128),
+            A.Normalize([0.0] * 3, [1.0] * 3, max_pixel_value=255.0),
+            ToTensorV2(),
+        ]
+    )
+
+    train_drive, val_drive,test_drive = getDataLoader("drive", transform, transform, transform, batch_size=200)
+    train, val, test = getDataLoader("ph", transform, transform, transform, batch_size=200)
+
+    print("Drive: ")
+    calculate_class_weights(train_drive)
+    calculate_class_weights(val_drive)
+    calculate_class_weights(test_drive)
+
+    print("PH2: ")
+    calculate_class_weights(train)
+    calculate_class_weights(val)
+    calculate_class_weights(test)
+>>>>>>> Stashed changes
 
     _, _, test_dataset = get_datasets(
         test_dataset_name, transforms, transforms, transforms

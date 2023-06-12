@@ -35,7 +35,10 @@ def calculate_class_weights(dataset):
     # Step 2: Calculate class weights
     total_samples = sum(class_counts)
     class_weights = [total_samples / count for count in class_counts]
-
+    class_fracs = [count / total_samples for count in class_counts]
+    print(f"Class Imbalance:")
+    print(f"{values[0]} ratio: {class_fracs[0]}")
+    print(f"{values[1]} ratio: {class_fracs[1]}")
     # Optional: Normalize the weights
     class_weights = torch.tensor(class_weights)
     class_weights = class_weights / class_weights.sum()
