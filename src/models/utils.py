@@ -130,12 +130,12 @@ class Losses:
     '''
     Class that holds loss functions that can be used to train segmentation models
     '''
-    def focal_loss(y_real:Tensor, y_pred:Tensor)->Tensor:
+    def focal_loss(y_real:Tensor, y_pred:Tensor, gamma:float=0.5)->Tensor:
         ### y_real and y_pred is [batch_n, channels=1, h, w]: [6, 1, 128, 128]
         y_real_flat = y_real.view(y_real.size(0), -1)
         y_pred_flat = y_pred.view(y_pred.size(0), -1)
         
-        gamma = 2 # a good value from the paper of Lin
+     
         weight = (1-F.sigmoid(y_pred_flat)).pow(gamma)
         tmp = weight*y_real_flat*torch.log(F.sigmoid(y_pred_flat)) + (1-y_real_flat)*torch.log(1-F.sigmoid(y_pred_flat))
         return -torch.mean(tmp)

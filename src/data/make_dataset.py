@@ -7,8 +7,13 @@ import torch
 from torchvision import transforms
 
 from PIL import Image
-
+from pathlib import Path
 import numpy as np
+
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
+
+from typing import Tuple, Any
 
 class SkinLesionDataset(Dataset):
     '''
@@ -69,6 +74,56 @@ def main():
     a = next(iter(loader))
 
     print(a[0].shape, a[1].shape)
+
+
+
+
+class EyeVesselsTest(Dataset):
+    '''
+    Class that creates a dataset for inference.
+    No mask returned and only uses the test dataset.
+    '''
+    def __init__(self,read_path:str, train:bool ,transform=None)->None:
+        super().__init__()
+        
+        search_pattern = '*.tif'
+
+        suffix = 'test'
+        if train:
+            suffix ='train'
+
+        read_path = Path(read_path)/suffix/'images'
+
+        print(read_path.as_posix())
+
+        self.images_list = list(Path(read_path).glob(search_pattern))
+
+        print(len(self.images_list))
+
+        self.transform = transform
+        if not self.transform:
+            self.transform = A.Compose([
+                ToTensorV2()
+            ])
+
+
+
+    def __getitem__(self, idx:int)->Tuple[torch.Tensor, Any]:
+        img_path = self.images_list[idx]
+
+        img = np.array(Image.open(img_path).convert('RGB'))
+        
+        augmented = self.transform(image=img)
+
+        return augmented['image'], None # Return a tuple with None so that it is compatible with the normal datasets with mask
+    
+    def __len__(self):
+        return len(self.images_list)
+    
+
+
+
+
 
 
 

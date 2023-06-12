@@ -14,6 +14,7 @@ import matplotlib.image
 
 from PIL import Image
 
+from src.data.make_dataset import EyeVesselsTest
 
 def getDataLoader(
     dataset: str,
@@ -116,7 +117,7 @@ def get_datasets(
             root_dir="/dtu/datasets1/02514/PH2_Dataset_images",
             transform=test_transforms,
         )
-
+    
     print(f"Total length: {len(target_train_dataset)}")
 
     indices = torch.randperm(len(target_train_dataset))
@@ -141,19 +142,19 @@ def get_datasets(
 def create_test_image_dir(
     test_dataset_name: str, resize_dims: int = 128, n_images: int = 10
 ) -> None:
-    root_dir_path = f"test_images_{test_dataset_name}"
-    path_ = Path(root_dir_path)
-    images_path = path_ / "images"
-    masks_path = path_ / "masks"
+    
+    read_root_dir_name = '/dtu/datasets1/02514/PH2_Dataset_images'
+    if test_dataset_name=='drive':
+        read_root_dir_name = '/dtu/datasets1/02514/DRIVE'
+
+    save_root_dir_path = f"test_images_{test_dataset_name}"
+    path_ = Path(save_root_dir_path)
 
     path_.mkdir(exist_ok=True)
-    images_path.mkdir(exist_ok=True)
-    masks_path.mkdir(exist_ok=True)
 
     transforms = A.Compose(
         [
             A.Resize(width=resize_dims, height=resize_dims),
-            # A.Normalize([0.0] * 3, [1.0] * 3, max_pixel_value=255.0),
             ToTensorV2(),
         ]
     )
@@ -161,13 +162,20 @@ def create_test_image_dir(
     _, _, test_dataset = get_datasets(
         test_dataset_name, transforms, transforms, transforms
     )
+    if test_dataset_name=='drive':
+        test_dataset = EyeVesselsTest(read_root_dir_name,train=False, transform=transforms)
+
 
     dataset_len = len(test_dataset)
+
     if dataset_len < n_images:
         n_images = dataset_len
 
+    print(test_dataset_name)
+
     for i in range(n_images):
-        image, mask = test_dataset[i]
+        image, _ = test_dataset[i]
+
 
         image = image.permute(1, 2, 0).numpy()
 
@@ -175,20 +183,11 @@ def create_test_image_dir(
         # im.save(images_path.as_posix() + f"/{test_dataset_name}_{i}.png", "PNG")
 
         matplotlib.image.imsave(
-            images_path.as_posix() + f"/{test_dataset_name}_{i}.png", image
+            path_.as_posix() + f"/{test_dataset_name}_{i}.png", image
         )
 
-        matplotlib.image.imsave(
-            masks_path.as_posix() + f"/{test_dataset_name}_{i}.png",
-            mask.squeeze().numpy(),
-            cmap="gray",
-        )
+        
 
-
-# fig = plt.figure()
-# plt.imshow(image)
-# plt.savefig()
-# plt.show()
 
 
 def main():

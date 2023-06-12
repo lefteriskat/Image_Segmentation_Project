@@ -57,7 +57,7 @@ def main():
     # Paths and constants
     ph2_data_path = "/dtu/datasets1/02514/PH2_Dataset_images"
 
-    dataset_name = 'drive' # 'drive' or 'ph'
+    dataset_name = 'ph' # 'drive' or 'ph'
 
     seed = 7
 
@@ -86,18 +86,19 @@ def main():
     p = 0.5
     train_transform = A.Compose(
         [
-            A.OneOf(
-                [
-                    A.Resize(width=resize_dims, height=resize_dims, p=0.5),
-                    A.RandomSizedCrop(
-                        min_max_height=[resize_dims / 4, resize_dims / 2],
-                        width=resize_dims,
-                        height=resize_dims,
-                        p=0.5,
-                    ),
-                ],
-                p=1.0,
-            ),
+            A.Resize(width=resize_dims, height=resize_dims, p=1.),
+            # A.OneOf(
+            #     [
+            #         A.Resize(width=resize_dims, height=resize_dims, p=0.5),
+            #         A.RandomSizedCrop(
+            #             min_max_height=[resize_dims / 4, resize_dims / 2],
+            #             width=resize_dims,
+            #             height=resize_dims,
+            #             p=0.5,
+            #         ),
+            #     ],
+            #     p=1.0,
+            # ),
             A.Transpose(p),
             A.OneOf(
                 [
@@ -108,8 +109,8 @@ def main():
                 ],
                 p=0.5,
             ),
-            A.GaussianBlur(p=0.3),
-            A.Blur(p=0.2),
+            # A.GaussianBlur(p=0.3),
+            # A.Blur(p=0.2),
             A.HorizontalFlip(p),
             A.VerticalFlip(p),
             A.Rotate(90, border_mode=cv2.BORDER_CONSTANT, p=p),
