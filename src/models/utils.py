@@ -130,21 +130,34 @@ class Losses:
     '''
     Class that holds loss functions that can be used to train segmentation models
     '''
-    def focal_loss(y_real:Tensor, y_pred:Tensor, gamma:float=0.5)->Tensor:
-        ### y_real and y_pred is [batch_n, channels=1, h, w]: [6, 1, 128, 128]
-        y_real_flat = y_real.view(y_real.size(0), -1)
-        y_pred_flat = y_pred.view(y_pred.size(0), -1)
+    
+    def focal_loss(gamma:float=0.5):
+        def focal_loss__(y_pred:Tensor, y_real:Tensor):
+            y_real_flat = y_real.view(y_real.size(0), -1)
+            y_pred_flat = y_pred.view(y_pred.size(0), -1)        
+     
+            weight = (1-F.sigmoid(y_pred_flat)).pow(gamma)
+            tmp = weight*y_real_flat*torch.log(F.sigmoid(y_pred_flat)) + (1-y_real_flat)*torch.log(1-F.sigmoid(y_pred_flat))
+            return -torch.mean(tmp)
+        
+        return focal_loss__
+
+
+    # def focal_loss(y_real:Tensor, y_pred:Tensor, gamma:float=0.5)->Tensor:
+    #     ### y_real and y_pred is [batch_n, channels=1, h, w]: [6, 1, 128, 128]
+    #     y_real_flat = y_real.view(y_real.size(0), -1)
+    #     y_pred_flat = y_pred.view(y_pred.size(0), -1)
         
      
-        weight = (1-F.sigmoid(y_pred_flat)).pow(gamma)
-        tmp = weight*y_real_flat*torch.log(F.sigmoid(y_pred_flat)) + (1-y_real_flat)*torch.log(1-F.sigmoid(y_pred_flat))
-        return -torch.mean(tmp)
+    #     weight = (1-F.sigmoid(y_pred_flat)).pow(gamma)
+    #     tmp = weight*y_real_flat*torch.log(F.sigmoid(y_pred_flat)) + (1-y_real_flat)*torch.log(1-F.sigmoid(y_pred_flat))
+    #     return -torch.mean(tmp)
     
-    def bce_loss(y_real:Tensor, y_pred:Tensor)->Tensor:
+    def bce_loss(y_pred:Tensor, y_real:Tensor)->Tensor:
         y_pred = torch.clip(y_pred, -10, 10)
         return torch.mean(y_pred - y_real * y_pred + torch.log(1 + torch.exp(-y_pred)))
     
-    def dice_loss(y_real:Tensor, y_pred:Tensor)->Tensor:
+    def dice_loss(y_pred:Tensor, y_real:Tensor)->Tensor:
         ### y_real and y_pred is [batch_n, channels=1, h, w]: [6, 1, 128, 128]
         y_real_flat = y_real.view(y_real.size(0), -1)
         y_pred_flat = y_pred.view(y_pred.size(0), -1)
@@ -152,7 +165,7 @@ class Losses:
         den = (y_real_flat + F.sigmoid(y_pred_flat)).mean() + 1
         return 1 - (num / den)
     
-    def bce_total_variation(y_real:Tensor, y_pred:Tensor, lambda_:float=0.1)->Tensor:
+    def bce_total_variation(y_pred:Tensor, y_real:Tensor, lambda_:float=0.1)->Tensor:
 
         def total_variation_term():        
             y_pred_x = y_pred[:,:,:-1,:]
