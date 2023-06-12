@@ -204,7 +204,7 @@ def main():
     # print(a.shape, b.shape)
     # print(a.dtype, b.dtype)
 
-    resize_dims = 256
+    resize_dims = 128
 
     create_test_image_dir("ph", n_images=10, resize_dims=resize_dims)
 
