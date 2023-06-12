@@ -184,4 +184,4 @@ class Losses:
             term2 = torch.sum( torch.abs(F.sigmoid(y_pred_yp1_flat) - F.sigmoid(y_pred_y_flat)) )
             return term1 + term2
 
-        return Losses.bce_loss(y_real, y_pred) + lambda_*total_variation_term()
+        return Losses.bce_loss(y_pred, y_real) + lambda_*total_variation_term()
